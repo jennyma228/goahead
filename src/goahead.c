@@ -139,6 +139,28 @@ MAIN(goahead, int argc, char **argv, char **envp)
      */
     websAddRoute("/", "file", 0);
 #endif
+#if ME_GOAHEAD_UPLOAD
+    websDefineAction("uploadFiles", uploadFiles);
+    websDefineAction("uploadTexts", uploadTexts);
+    websDefineAction("deletePage", deletePage);
+    websDefineAction("nextPage", nextPage);
+    websDefineAction("returnIndex", returnIndex);
+    websDefineAction("getComment", getComment);
+    websDefineAction("deleteComment", deleteComment);
+#endif
+#if USING_SQLITE
+// creat sqlite database
+{
+    char            dbfile[64];
+    snprintf(dbfile,sizeof(dbfile),"%sdog.db", websGetDocuments());
+    int ret = sqlite3_open(dbfile, &sqldb);
+    if( ret != SQLITE_OK ) {
+        logmsg(1 , "Can not open database: %s", sqlite3_errmsg(sqldb));
+    }
+    logmsg(1, "Database open %s success!",dbfile);
+    CreateTable(sqldb);
+}
+#endif
 #if ME_UNIX_LIKE && !MACOSX
     /*
         Service events till terminated
@@ -151,6 +173,11 @@ MAIN(goahead, int argc, char **argv, char **envp)
     }
 #endif
     websServiceEvents(&finished);
+#if USING_SQLITE
+    sqlite3_close(sqldb);
+    sqldb = 0;
+    logmsg(1, "Database closed!");
+#endif
     logmsg(1, "Instructed to exit");
     websClose();
 #if WINDOWS
@@ -201,6 +228,7 @@ static void usage() {
 static void initPlatform() 
 {
 #if ME_UNIX_LIKE
+    signal(SIGINT, sigHandler);
     signal(SIGTERM, sigHandler);
     signal(SIGKILL, sigHandler);
     #ifdef SIGPIPE

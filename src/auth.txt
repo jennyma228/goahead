@@ -10,8 +10,14 @@
 #   Examples:
 #
 #   Define roles
-#       role name=manager abilities=view,edit,delete
+role name=manager abilities=view,edit,delete
+role name=user abilities=view,person,
+role name=person abilities=breathe,
+role name=administrator abilities=user,manage,
+role name=admin abilities=user,manage,
 #
 #   Define a user
-#       user name=joshua password=2fd6e47ff9bb70c0465fd2f5c8e5305e roles=manager,purchaser
+user name=jamesvan password=29c1012b4756194d256c5064c17e42f4 roles=manager,purchaser
+user name=jennyma password=e35a1063bf946c877030242da674ccdf roles=manager,purchaser
+user name=admin password=7d1e4c715eacaa822ef1a0ef490b5d6d roles=manager,purchaser
 #

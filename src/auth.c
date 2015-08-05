@@ -531,7 +531,13 @@ static void loginServiceProc(Webs *wp)
         if ((referrer = websGetSessionVar(wp, "referrer", 0)) != 0) {
             websRedirect(wp, referrer);
         } else {
-            websRedirectByStatus(wp, HTTP_CODE_OK);
+            //websRedirectByStatus(wp, HTTP_CODE_OK);
+            websSetStatus(wp, 200);
+            websWriteHeaders(wp, -1, 0);
+            websWriteHeader(wp, "Content-Type", "text/plain");
+            websWriteEndHeaders(wp);
+            websWrite(wp, "{\"auth\":\"%s\"}",websGetSessionVar(wp, WEBS_SESSION_USERNAME, ""));
+            websDone(wp);
         }
         websSetSessionVar(wp, "loginStatus", "ok");
     } else {
@@ -596,6 +602,7 @@ PUBLIC bool websVerifyPasswordFromFile(Webs *wp)
     } else {
         success = smatch(wp->password, wp->user->password);
     }
+    printf("[%s][%s][%s]\n",wp->username,wp->password, wp->user->password);
     if (success) {
         trace(5, "User \"%s\" authenticated", wp->username);
     } else {

@@ -1675,6 +1675,13 @@ PUBLIC WebsHash websGetUpload(struct Webs *wp);
     @stability Evolving
  */
 PUBLIC WebsUpload *websLookupUpload(struct Webs *wp, char *key);
+PUBLIC void uploadFiles(struct Webs *wp);
+PUBLIC void uploadTexts(struct Webs *wp);
+PUBLIC void deletePage(struct Webs *wp);
+PUBLIC void nextPage(struct Webs *wp);
+PUBLIC void returnIndex(struct Webs *wp);
+PUBLIC void getComment(struct Webs *wp);
+PUBLIC void deleteComment(struct Webs *wp);
 #endif
 /********************************** Defines ***********************************/
 
@@ -3171,6 +3178,15 @@ PUBLIC int websJstOpen();
     @stability Evolving
  */
 PUBLIC int websJstWrite(int jid, Webs *wp, int argc, char **argv);
+PUBLIC int websJstGetTitle(int jid, Webs *wp, int argc, char **argv);
+PUBLIC int websJstGetText(int jid, Webs *wp, int argc, char **argv);
+PUBLIC int websJstGetAuth(int jid, Webs *wp, int argc, char **argv);
+PUBLIC int websJstGetTime(int jid, Webs *wp, int argc, char **argv);
+PUBLIC int websJstGetPicture(int jid, Webs *wp, int argc, char **argv);
+PUBLIC int websJstGetChannel(int jid, Webs *wp, int argc, char **argv);
+PUBLIC int websJstGetPage(int jid, Webs *wp, int argc, char **argv);
+PUBLIC int websJstGetShow(int jid, Webs *wp, int argc, char **argv);
+PUBLIC int websJstGetLogin(int jid, Webs *wp, int argc, char **argv);
 #endif
 
 #if FUTURE
@@ -3966,6 +3982,20 @@ PUBLIC int websSetSessionVar(Webs *wp, char *name, char *value);
 
 #if ME_CUSTOMIZE
  #include "customize.h"
+#endif
+
+#define USING_SQLITE  1
+#if USING_SQLITE
+#include    <sqlite3.h>
+#ifndef SQL_DB
+#define SQL_DB
+sqlite3 * sqldb;
+#else
+extern sqlite3 * sqldb;
+#endif
+#define MAX_CH 4
+#define MAX_ITEM 10
+int CreateTable(sqlite3 * db);
 #endif
 
 #ifdef __cplusplus

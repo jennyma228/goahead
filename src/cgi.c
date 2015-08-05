@@ -78,7 +78,7 @@ static bool cgiHandler(Webs *wp)
         websSetVar(wp, "PATH_INFO", "");
         websSetVar(wp, "PATH_TRANSLATED", "");        
     }
-    cgiPath = sfmt("%s%s/%s", dir, cgiPrefix, cgiName);
+    cgiPath = sfmt("%s/%s",  cgiPrefix,cgiName);
     websSetVarFmt(wp, "SCRIPT_NAME", "%s/%s", cgiPrefix, cgiName);
     websSetVar(wp, "SCRIPT_FILENAME", cgiPath);
     
@@ -90,7 +90,7 @@ static bool cgiHandler(Webs *wp)
     {
         WebsStat sbuf;
         if (stat(cgiPath, &sbuf) != 0 || (sbuf.st_mode & S_IFREG) == 0) {
-            error("Cannot find CGI program: ", cgiPath);
+            error("Cannot find CGI program: %s", cgiPath);
             websError(wp, HTTP_CODE_NOT_FOUND | WEBS_NOLOG, "CGI program file does not exist");
             wfree(cgiPath);
             return 1;

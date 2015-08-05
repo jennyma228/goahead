@@ -35,7 +35,8 @@
 #   Standard routes
 #
 route uri=/cgi-bin dir=cgi-bin handler=cgi
-route uri=/action handler=action
+route uri=/action auth=form handler=action redirect=401@/logme.jst
+route uri=/exe handler=action
 route uri=/ extensions=jst handler=jst
 route uri=/ methods=OPTIONS|TRACE handler=options
 
