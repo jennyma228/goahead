@@ -1035,8 +1035,8 @@ void uploadFiles(Webs *wp)
     char  channel=0,item=0;
     char pic_ft1[10]="150x120";
     char pic_ft2[10]="800x600";
-    char mytitle[24]=" ";
-    char mytext[128]=" ";
+    char mytitle[24]="";
+    char mytext[128]="";
 
     char * pErrMsg = 0;
     int ret = 0;
