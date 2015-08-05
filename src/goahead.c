@@ -152,7 +152,7 @@ MAIN(goahead, int argc, char **argv, char **envp)
 // creat sqlite database
 {
     char            dbfile[64];
-    snprintf(dbfile,sizeof(dbfile),"%sdog.db", websGetDocuments());
+    snprintf(dbfile,sizeof(dbfile),"%s/dog.db", websGetDocuments());
     int ret = sqlite3_open(dbfile, &sqldb);
     if( ret != SQLITE_OK ) {
         logmsg(1 , "Can not open database: %s", sqlite3_errmsg(sqldb));
