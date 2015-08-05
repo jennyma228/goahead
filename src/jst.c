@@ -1051,6 +1051,11 @@ void uploadFiles(Webs *wp)
     assert(websValid(wp));
         
 if (scaselessmatch(wp->method, "POST")) {
+    char document[128];
+    snprintf(document,sizeof(document),"%s",websGetDocuments());
+    if(document[strlen(document)-1]=='/')
+        document[strlen(document)-1]='\0';
+    
     currentpage=websGetQdata(wp,"mid");
     logmsg(2,"currentpage=%d\n",currentpage);
     nextpage=sqlGetMax("tLst")+1;
@@ -1063,9 +1068,9 @@ if (scaselessmatch(wp->method, "POST")) {
     sqlGetTable("tLst",currentpage,"pic_ft1",pic_ft1,sizeof(pic_ft1));
     sqlGetTable("tLst",currentpage,"pic_ft2",pic_ft2,sizeof(pic_ft2));
 
-    upfile = sfmt("%s/img_files/0%04d.jpg", websGetDocuments(),nextpic);
+    upfile = sfmt("%s/img_files/0%04d.jpg", document,nextpic);
     logmsg(2,"%s\n",upfile);
-    upfile_s = sfmt("%s/img_files/%04d.jpg", websGetDocuments(),nextpic);
+    upfile_s = sfmt("%s/img_files/%04d.jpg", document,nextpic);
     logmsg(2,"%s\n",upfile_s);
             
     for (s = hashFirst(wp->vars); s; s = hashNext(wp->vars, s)) {
@@ -1078,7 +1083,7 @@ if (scaselessmatch(wp->method, "POST")) {
     }
     for (s = hashFirst(wp->files); s; s = hashNext(wp->files, s)) {
         up = s->content.value.symbol;
-        //upfile = sfmt("%sdog_files/%s", websGetDocuments(), up->clientFilename);
+        //upfile = sfmt("%sdog_files/%s", document, up->clientFilename);
         //rename(up->filename, upfile);
         //int ret=chmod(upfile,S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
         //logmsg(2,"chmod %s=%d!\n",upfile,ret);
@@ -1090,9 +1095,9 @@ if (scaselessmatch(wp->method, "POST")) {
             int lastpage=sqlGetNextList(currentpage,1);
             int lastpic=sqlGetPicture(lastpage);
             logmsg(2,"last[%d]current[%d]next[%d]\n",lastpic,currentpic,nextpic);
-            char *currentfile = sfmt("%s/img_files/0%04d.jpg", websGetDocuments(),currentpic);
-            char *lastfile = sfmt("%s/img_files/0%04d.jpg", websGetDocuments(),lastpic);
-            char *tempfile = sfmt("%s/img_files/temp.jpg", websGetDocuments());
+            char *currentfile = sfmt("%s/img_files/0%04d.jpg", document,currentpic);
+            char *lastfile = sfmt("%s/img_files/0%04d.jpg", document,lastpic);
+            char *tempfile = sfmt("%s/img_files/temp.jpg", document);
             char *convert=sfmt("convert %s %s %s +append %s",lastfile,currentfile,upfile,tempfile);
             //logmsg(2,"%s\n",convert);
             system(convert);
@@ -1274,9 +1279,14 @@ void deletePage(Webs *wp)
         item=sqlGetItem(currentpage);
         logmsg(2,"item=%d",item);
 
-        upfile = sfmt("%simg_files/0%04d.jpg", websGetDocuments(),currentpic);
+        char document[128];
+        snprintf(document,sizeof(document),"%s",websGetDocuments());
+        if(document[strlen(document)-1]=='/')
+            document[strlen(document)-1]='\0';
+
+        upfile = sfmt("%simg_files/0%04d.jpg", document,currentpic);
         logmsg(2,"remove %s",upfile);
-        upfile_s = sfmt("%simg_files/%04d.jpg", websGetDocuments(),currentpic);
+        upfile_s = sfmt("%simg_files/%04d.jpg", document,currentpic);
         logmsg(2,"remove %s",upfile_s);
         remove(upfile);
         remove(upfile_s);
