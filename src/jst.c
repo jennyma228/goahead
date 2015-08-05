@@ -282,10 +282,17 @@ PUBLIC int websJstGetTitle(int jid, Webs *wp, int argc, char **argv)
  */
 PUBLIC int websJstGetText(int jid, Webs *wp, int argc, char **argv)
 {
-    char strpage[128];
     int pg=0,id=0,op=0;
-    char sText[128]="\0";
-    
+    int txt_id=0;
+
+    char * pErrMsg = 0;
+    int ret = 0;
+    char *zSQL;
+    int nrow = 0;
+    int ncolumn = 0;
+    char **chAllResult; //Array for Result
+    const char * sSelect_lst = "SELECT txt_content FROM tTxt where id=%d;";
+
     assert(websValid(wp));
     
     id=websGetQdata(wp,"mid");
@@ -295,21 +302,32 @@ PUBLIC int websJstGetText(int jid, Webs *wp, int argc, char **argv)
         op=_atoi(argv[0]);
     }
     if(pg==0){
-        sqlGetTable("tTxt", sqlGetText(sqlGetList(id,op)),"txt_content",sText,sizeof(sText));
-        snprintf(strpage,sizeof(strpage),"%s",sText);
+        txt_id=sqlGetText(sqlGetList(id,op));
      } else if (pg==1){
          if(op==1){
-            sqlGetTable("tTxt", sqlGetText(id),"txt_content",sText,sizeof(sText));
-            snprintf(strpage,sizeof(strpage),"%s",sText);
+            txt_id=sqlGetText(id);
          }else{
-            sqlGetTable("tTxt", sqlGetText(id),"txt_content",sText,sizeof(sText));
-            snprintf(strpage,sizeof(strpage),"%s",sText);
+             txt_id=sqlGetText(id);
          }
      }
-       
-     if (websWriteBlock(wp, strpage, strlen(strpage)) < 0) {
-         return -1;
-     }
+     
+    zSQL = sqlite3_mprintf(sSelect_lst,txt_id);
+    printf( "%s\n",zSQL);
+    ret = sqlite3_get_table( sqldb, zSQL, &chAllResult , &nrow , &ncolumn , &pErrMsg );
+    sqlite3_free(zSQL);
+    if(ret != SQLITE_OK){
+      printf("SELECT txt_content FROM tTxt where id=%d error: %s\n", txt_id,pErrMsg);
+      sqlite3_free(pErrMsg);
+      return -1;
+    } else {
+      if(nrow==1){
+           websWriteBlock(wp, chAllResult[1], strlen(chAllResult[1])) ;
+      } else {
+          printf( "No txt_content from tTxt[%d] !\n",txt_id);
+      }
+    }
+    sqlite3_free_table(chAllResult);
+
      return 0;
 }
 
@@ -1045,9 +1063,9 @@ if (scaselessmatch(wp->method, "POST")) {
     sqlGetTable("tLst",currentpage,"pic_ft1",pic_ft1,sizeof(pic_ft1));
     sqlGetTable("tLst",currentpage,"pic_ft2",pic_ft2,sizeof(pic_ft2));
 
-    upfile = sfmt("%simg_files/0%04d.jpg", websGetDocuments(),nextpic);
+    upfile = sfmt("%s/img_files/0%04d.jpg", websGetDocuments(),nextpic);
     logmsg(2,"%s\n",upfile);
-    upfile_s = sfmt("%simg_files/%04d.jpg", websGetDocuments(),nextpic);
+    upfile_s = sfmt("%s/img_files/%04d.jpg", websGetDocuments(),nextpic);
     logmsg(2,"%s\n",upfile_s);
             
     for (s = hashFirst(wp->vars); s; s = hashNext(wp->vars, s)) {
@@ -1072,9 +1090,9 @@ if (scaselessmatch(wp->method, "POST")) {
             int lastpage=sqlGetNextList(currentpage,1);
             int lastpic=sqlGetPicture(lastpage);
             logmsg(2,"last[%d]current[%d]next[%d]\n",lastpic,currentpic,nextpic);
-            char *currentfile = sfmt("%simg_files/0%04d.jpg", websGetDocuments(),currentpic);
-            char *lastfile = sfmt("%simg_files/0%04d.jpg", websGetDocuments(),lastpic);
-            char *tempfile = sfmt("%simg_files/temp.jpg", websGetDocuments());
+            char *currentfile = sfmt("%s/img_files/0%04d.jpg", websGetDocuments(),currentpic);
+            char *lastfile = sfmt("%s/img_files/0%04d.jpg", websGetDocuments(),lastpic);
+            char *tempfile = sfmt("%s/img_files/temp.jpg", websGetDocuments());
             char *convert=sfmt("convert %s %s %s +append %s",lastfile,currentfile,upfile,tempfile);
             //logmsg(2,"%s\n",convert);
             system(convert);
@@ -1168,8 +1186,8 @@ void uploadTexts(Webs *wp)
     WebsKey         *s;
     int currentpage=0;
     int currenttxt=0;
-    char mytitle[40];
-    char mytext[128];
+    char *mytitle="";
+    char *mytext="";
 
     char * pErrMsg = 0;
     int ret = 0;
@@ -1193,10 +1211,10 @@ void uploadTexts(Webs *wp)
         for (s = hashFirst(wp->vars); s; s = hashNext(wp->vars, s)) {
             //logmsg(2, "[%s]=[%s]\r\n", s->name.value.string, s->content.value.string);
             if(scaselessmatch(s->name.value.string,"mytitle")){
-                snprintf(mytitle,sizeof(mytitle),"%s",s->content.value.string);
+                mytitle=sfmt("%s",s->content.value.string);
                 printf("mytitle[%s]\n",mytitle);
             } else if (scaselessmatch(s->name.value.string,"mytext")){
-                snprintf(mytext,sizeof(mytext),"%s",s->content.value.string);
+                mytext=sfmt("%s",s->content.value.string);
                 printf("mytext[%s]\n",mytext);
             }
         }
@@ -1210,7 +1228,7 @@ void uploadTexts(Webs *wp)
                   printf("Update tTxt error: %s\n", pErrMsg);
                   sqlite3_free(pErrMsg);
              }
-        } else {
+         } else {
             zSQL = sqlite3_mprintf(sUpdate_txt,mytitle,mytext,currenttxt);
             ret = sqlite3_exec( sqldb, zSQL, 0, 0, &pErrMsg);
             printf("%s\n",zSQL);
@@ -1227,6 +1245,8 @@ void uploadTexts(Webs *wp)
     websWriteEndHeaders(wp);
     websWrite(wp, "{\"mytitle\":\"%s\",\"mytext\":\"%s\"}",mytitle,mytext);
     websDone(wp);
+    wfree(mytitle);
+    wfree(mytext);
 }
 
 void deletePage(Webs *wp)
