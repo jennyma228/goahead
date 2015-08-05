@@ -255,8 +255,10 @@ static int processUploadHeader(Webs *wp, char *line)
 
                 if ((wp->upfd = open(wp->uploadTmp, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600)) < 0) {
                     websError(wp, HTTP_CODE_INTERNAL_SERVER_ERROR, "Cannot open upload temp file %s", wp->uploadTmp);
+                    printf("Cannot open upload temp file %s\n",wp->uploadTmp);
                     return -1;
                 }
+                printf("Open upload temp file %s\n",wp->uploadTmp);
                 /*  
                     Create the files[id]
                  */
