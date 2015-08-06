@@ -471,20 +471,28 @@ PUBLIC int websJstGetPage(int jid, Webs *wp, int argc, char **argv)
  */
 PUBLIC int websJstGetChannel(int jid, Webs *wp, int argc, char **argv)
 {
-   int nav=0;
-   int option=0;
+    int pg=0,id=0,op=0,ch=0;
    
    assert(websValid(wp));
 
-    if(argc ) {
-       assert(argv);
-        option=_atoi(argv[0]);
-        //logmsg(2,"argv=%s",argv[0]);
-    }
-    
-    nav=websGetQdata(wp,"mid");
+    id=websGetQdata(wp,"mid");
+
+   if(argc ) {
+      assert(argv);
+       op=_atoi(argv[0]);
+       //logmsg(2,"argv=%s",argv[0]);
+   }
    
-   if(option==nav){
+   pg=websGetPage(wp);
+   if(pg){
+        ch=sqlGetChannel(id);
+    } else {
+        ch=id;
+    }
+   
+  //logmsg(2,"pg[%d]id[%d]op[%d]ch[%d]",pg,id,op,ch);
+
+   if(op==ch){
        websWrite(wp, "%s","on");
     } else {
        websWrite(wp, "%s","off");
@@ -1284,9 +1292,9 @@ void deletePage(Webs *wp)
         if(document[strlen(document)-1]=='/')
             document[strlen(document)-1]='\0';
 
-        upfile = sfmt("%simg_files/0%04d.jpg", document,currentpic);
+        upfile = sfmt("%s/img_files/0%04d.jpg", document,currentpic);
         logmsg(2,"remove %s",upfile);
-        upfile_s = sfmt("%simg_files/%04d.jpg", document,currentpic);
+        upfile_s = sfmt("%s/img_files/%04d.jpg", document,currentpic);
         logmsg(2,"remove %s",upfile_s);
         remove(upfile);
         remove(upfile_s);
