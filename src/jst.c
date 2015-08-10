@@ -1364,28 +1364,36 @@ currentpage=sqlGetNextList(currentpage,next_last);
 pic_id=sqlGetPicture(currentpage);
 txt_id=sqlGetText(currentpage);
 
-websSetStatus(wp, 200);
-websWriteHeaders(wp, -1, 0);
-websWriteHeader(wp, "Content-Type", "text/html");
-websWriteEndHeaders(wp);
+if (scaselessmatch(wp->method, "POST")) {
+    websSetStatus(wp, 200);
+    websWriteHeaders(wp, -1, 0);
+    websWriteHeader(wp, "Content-Type", "text/html");
+    websWriteEndHeaders(wp);
 
-zSQL = sqlite3_mprintf(sSelect_txt,txt_id);
-logmsg(2,"%s",zSQL);
-ret = sqlite3_get_table( sqldb, zSQL, &chAllResult , &nrow , &ncolumn , &pErrMsg );
-sqlite3_free(zSQL);
-if(ret != SQLITE_OK){
-  printf("SELECT tTxt error: %s\n", pErrMsg);
-  sqlite3_free(pErrMsg);
-} else {
-  if(nrow==1){
-    printf( "Comment[%d][%s][%s][%s][%s][%d]\n",txt_id,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+5],pic_id);
-    //sqlGetTable("tTxt", sqlGetText(currentpage),"author",sAuth,sizeof(sAuth));
-    websWrite(wp,sOutput,currentpage,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+5],pic_id);
-  }
+    zSQL = sqlite3_mprintf(sSelect_txt,txt_id);
+    logmsg(2,"%s",zSQL);
+    ret = sqlite3_get_table( sqldb, zSQL, &chAllResult , &nrow , &ncolumn , &pErrMsg );
+    sqlite3_free(zSQL);
+    if(ret != SQLITE_OK){
+      printf("SELECT tTxt error: %s\n", pErrMsg);
+      sqlite3_free(pErrMsg);
+    } else {
+      if(nrow==1){
+        printf( "Comment[%d][%s][%s][%s][%s][%d]\n",txt_id,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+5],pic_id);
+        //sqlGetTable("tTxt", sqlGetText(currentpage),"author",sAuth,sizeof(sAuth));
+        websWrite(wp,sOutput,currentpage,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+5],pic_id);
+      }
+    }
+    sqlite3_free_table(chAllResult);
+
+    websDone(wp);
+}else{
+    char            *redirect;
+    redirect = sfmt("/page.jst?mid=%04d", currentpage);
+    logmsg(2,"redirect to %s",redirect);
+    websRedirect(wp,redirect);
+    wfree(redirect);
 }
-sqlite3_free_table(chAllResult);
-
-websDone(wp);
 #else
     char            *redirect;
     int currentpage=0;
