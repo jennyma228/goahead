@@ -262,7 +262,7 @@ PUBLIC int websJstGetTitle(int jid, Webs *wp, int argc, char **argv)
        sqlGetTable("tTxt", sqlGetText(sqlGetList(id,op)),"txt_title",sTitle,sizeof(sTitle));
        snprintf(strpage,sizeof(strpage),"%s",sTitle);
     } else if (pg==1){
-        if(op==1){
+        if(op==0){
             sqlGetTable("tTxt", sqlGetText(id),"txt_title",sTitle,sizeof(sTitle));
             snprintf(strpage,sizeof(strpage),"%s",sTitle);
         }else{
@@ -304,7 +304,7 @@ PUBLIC int websJstGetText(int jid, Webs *wp, int argc, char **argv)
     if(pg==0){
         txt_id=sqlGetText(sqlGetList(id,op));
      } else if (pg==1){
-         if(op==1){
+         if(op==0){
             txt_id=sqlGetText(id);
          }else{
              txt_id=sqlGetText(id);
@@ -352,7 +352,7 @@ PUBLIC int websJstGetAuth(int jid, Webs *wp, int argc, char **argv)
         sqlGetTable("tPic", sqlGetPicture(sqlGetList(id,op)),"author",sAuth,sizeof(sAuth));
         snprintf(strpage,sizeof(strpage),"%s",sAuth);
      } else if (pg==1){
-         if(op==1){
+         if(op==0){
              sqlGetTable("tTxt", sqlGetText(id),"author",sAuth,sizeof(sAuth));
              snprintf(strpage,sizeof(strpage),"%s",sAuth);
          }else {
@@ -389,7 +389,7 @@ PUBLIC int websJstGetTime(int jid, Webs *wp, int argc, char **argv)
         sqlGetTable("tLst", sqlGetList(id,op),"lst_time",sTime,sizeof(sTime));
         snprintf(strpage,sizeof(strpage),"%s",sTime);
      } else if (pg==1){
-        if(op==1){
+        if(op==0){
             sqlGetTable("tTxt",sqlGetText(id),"txt_time",sTime,sizeof(sTime));
             snprintf(strpage,sizeof(strpage),"%s",sTime);
         }else {
@@ -518,7 +518,7 @@ PUBLIC int websJstGetShow(int jid, Webs *wp, int argc, char **argv)
     if(pg==0){
         sqlGetTable("tPic", sqlGetPicture(sqlGetList(id,op)),"author",sAuth,sizeof(sAuth));
      } else if (pg==1){
-         if(op==1){
+         if(op==0){
              sqlGetTable("tTxt", sqlGetText(id),"author",sAuth,sizeof(sAuth));
          }else {
              sqlGetTable("tTxt", sqlGetText(id),"author",sAuth,sizeof(sAuth));
@@ -1341,6 +1341,52 @@ void deletePage(Webs *wp)
 
 void nextPage(Webs *wp)
 {
+#if 1
+int currentpage=0;
+int next_last=0;
+int pic_id=0;
+int txt_id=0;
+
+char * pErrMsg = 0;
+int ret = 0;
+char *zSQL;
+int nrow = 0;
+int ncolumn = 0;
+char **chAllResult; //Array for Result
+
+const char * sSelect_txt = "SELECT *  FROM tTxt where lst_id=%d;";
+char * sOutput =  "{\"id\":\"%d\",\"txt_time\":\"%s\",\"author\":\"%s\",\"txt_title\":\"%s\",\"txt_content\":\"%s\",\"picture\":\"./img_files/0%04d.jpg\"}";
+
+assert(websValid(wp));
+currentpage=websGetQdata(wp,"mid");
+next_last=websGetQdata(wp,"next_last");
+currentpage=sqlGetNextList(currentpage,next_last);
+pic_id=sqlGetPicture(currentpage);
+txt_id=sqlGetText(currentpage);
+
+websSetStatus(wp, 200);
+websWriteHeaders(wp, -1, 0);
+websWriteHeader(wp, "Content-Type", "text/html");
+websWriteEndHeaders(wp);
+
+zSQL = sqlite3_mprintf(sSelect_txt,txt_id);
+logmsg(2,"%s",zSQL);
+ret = sqlite3_get_table( sqldb, zSQL, &chAllResult , &nrow , &ncolumn , &pErrMsg );
+sqlite3_free(zSQL);
+if(ret != SQLITE_OK){
+  printf("SELECT tTxt error: %s\n", pErrMsg);
+  sqlite3_free(pErrMsg);
+} else {
+  if(nrow==1){
+    printf( "Comment[%d][%s][%s][%s][%s][%d]\n",txt_id,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+5],pic_id);
+    //sqlGetTable("tTxt", sqlGetText(currentpage),"author",sAuth,sizeof(sAuth));
+    websWrite(wp,sOutput,currentpage,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+5],pic_id);
+  }
+}
+sqlite3_free_table(chAllResult);
+
+websDone(wp);
+#else
     char            *redirect;
     int currentpage=0;
     int flag=0;
@@ -1353,6 +1399,7 @@ void nextPage(Webs *wp)
     logmsg(2,"redirect to %s",redirect);
     websRedirect(wp,redirect);
     wfree(redirect);
+#endif
 }
 
 void returnIndex(Webs *wp)
