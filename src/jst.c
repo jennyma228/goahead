@@ -1365,6 +1365,7 @@ pic_id=sqlGetPicture(currentpage);
 txt_id=sqlGetText(currentpage);
 
 if (scaselessmatch(wp->method, "POST")) {
+    printf("nextPage:POST\n");
     websSetStatus(wp, 200);
     websWriteHeaders(wp, -1, 0);
     websWriteHeader(wp, "Content-Type", "text/html");
@@ -1389,6 +1390,7 @@ if (scaselessmatch(wp->method, "POST")) {
     websDone(wp);
 }else{
     char            *redirect;
+    printf("nextPage:GET\n");
     redirect = sfmt("/page.jst?mid=%04d", currentpage);
     logmsg(2,"redirect to %s",redirect);
     websRedirect(wp,redirect);
