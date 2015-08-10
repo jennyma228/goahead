@@ -1354,7 +1354,7 @@ int nrow = 0;
 int ncolumn = 0;
 char **chAllResult; //Array for Result
 
-const char * sSelect_txt = "SELECT *  FROM tTxt where lst_id=%d;";
+const char * sSelect_txt = "SELECT *  FROM tTxt where id=%d;";
 char * sOutput =  "{\"id\":\"%d\",\"txt_time\":\"%s\",\"author\":\"%s\",\"txt_title\":\"%s\",\"txt_content\":\"%s\",\"picture\":\"./img_files/0%04d.jpg\"}";
 
 assert(websValid(wp));
