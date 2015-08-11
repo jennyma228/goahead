@@ -1191,7 +1191,7 @@ if (scaselessmatch(wp->method, "POST")) {
 
 void uploadTexts(Webs *wp)
 {
-    WebsKey         *s;
+    //WebsKey         *s;
     int currentpage=0;
     int currenttxt=0;
     char *mytitle;
