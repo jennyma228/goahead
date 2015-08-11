@@ -61,6 +61,7 @@ static void freeRole(WebsRole *rp);
 static void freeUser(WebsUser *up);
 static void logoutServiceProc(Webs *wp);
 static void loginServiceProc(Webs *wp);
+static int registerServiceProc(Webs *wp);
 
 #if ME_GOAHEAD_JAVASCRIPT && FUTURE
 static int jsCan(int jsid, Webs *wp, int argc, char **argv);
@@ -154,6 +155,7 @@ PUBLIC int websOpenAuth(int minimal)
 #if ME_GOAHEAD_JAVASCRIPT && FUTURE
         websJsDefine("can", jsCan);
 #endif
+        websDefineAction("registerin", registerServiceProc);
         websDefineAction("login", loginServiceProc);
         websDefineAction("logout", logoutServiceProc);
     }
@@ -192,7 +194,7 @@ PUBLIC void websCloseAuth()
 }
 
 
-#if KEEP
+#if 1//KEEP
 PUBLIC int websWriteAuthFile(char *path)
 {
     FILE        *fp;
@@ -510,6 +512,85 @@ PUBLIC bool websLogoutUser(Webs *wp)
         return 0;
     }
     websRedirectByStatus(wp, HTTP_CODE_OK);
+    return 1;
+}
+
+
+/*
+    Internal register service routine for Form-based auth
+ */
+static int registerServiceProc(Webs *wp)
+{
+    WebsRoute   *route;
+    char *referrer;
+    char *username;
+    char *password;
+    char *confirm;
+    char *encodedPassword;
+
+    assert(wp);
+    route = wp->route;
+    assert(route);
+
+    websSetStatus(wp, 200);
+    websWriteHeaders(wp, -1, 0);
+    websWriteHeader(wp, "Content-Type", "text/plain");
+    websWriteEndHeaders(wp);
+
+    username=websGetVar(wp, "username", "");
+    
+    if (websLookupUser(username)) {
+        error("User %s already exists", username);
+        /* Already exists */
+        websWrite(wp, "{\"register\":\"%s\"}","UserExists");
+        websDone(wp);
+        return 0;
+    }
+
+    password=websGetVar(wp, "password", "");
+    confirm=websGetVar(wp, "confirm", "");
+
+    printf("register[%s][%s][%s]\n",username,password,confirm);
+
+    if (!smatch(password, confirm)) {
+        error("Password not match");
+        /* Password not match */
+        websWrite(wp, "{\"register\":\"%s\"}","NotMatch");
+        websDone(wp);
+        return 0;
+    }
+
+    encodedPassword = websMD5(sfmt("%s:%s:%s", username, ME_GOAHEAD_REALM , password));
+    printf("encodedPassword[%s][%s]\n",encodedPassword,ME_GOAHEAD_REALM);
+
+    if (websAddUser(username, encodedPassword, "user,purchaser") == 0) {
+        error("websAddUser[%s] error ",username);
+        /* websAddUser error */
+        websWrite(wp, "{\"register\":\"%s\"}","NotAdd");
+        websDone(wp);
+        return 0;
+    }
+    if (websWriteAuthFile("auth.txt") < 0) {
+        error("save auth.txt error");
+        /* save auth.txt error */
+        websWrite(wp, "{\"register\":\"%s\"}","NotSave");
+        websDone(wp);
+        return 0;
+    }
+
+    if (websLoginUser(wp, username, password)){
+        if ((referrer = websGetSessionVar(wp, "referrer", 0)) != 0) {
+            websRedirect(wp, referrer);
+        } else {
+            //websRedirectByStatus(wp, HTTP_CODE_OK);
+            websWrite(wp, "{\"register\":\"%s\"}",websGetSessionVar(wp, WEBS_SESSION_USERNAME, ""));
+            websDone(wp);
+        }
+        //websSetSessionVar(wp, "loginStatus", "ok");
+    }else{
+        websWrite(wp, "{\"register\":\"%s\"}","NotLogin");
+        websDone(wp);
+    }
     return 1;
 }
 

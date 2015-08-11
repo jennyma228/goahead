@@ -878,11 +878,11 @@ int CreateTable(sqlite3 * db)
  lst_id int, author varchar(20), txt_title varchar(40), txt_content TEXT);";
 
   //(SELECT max(pic_id) FROM tPic)+1 '640x330','800x600' '150x120','800x600'
-  const char * sInsert_lst = "insert into tLst values(NULL,(SELECT datetime('now')),\
+  const char * sInsert_lst = "insert into tLst values(NULL,(SELECT datetime('now', 'localtime')),\
  '%d','%d','%d','%d','150x120','800x600');";
-  const char * sInsert_pic = "insert into tPic values(NULL,(SELECT datetime('now')),\
+  const char * sInsert_pic = "insert into tPic values(NULL,(SELECT datetime('now', 'localtime')),\
  '%d', 'admin');";
-  const char * sInsert_txt = "insert into tTxt values(NULL,(SELECT datetime('now')),\
+  const char * sInsert_txt = "insert into tTxt values(NULL,(SELECT datetime('now, 'localtime'')),\
  '%d', 'admin','%d','%d');";
 
   const char * sUpdate_lst = "update tLst set pic_ft1='640x330' where item=1;";
@@ -1043,17 +1043,17 @@ void uploadFiles(Webs *wp)
     char  channel=0,item=0;
     char pic_ft1[10]="150x120";
     char pic_ft2[10]="800x600";
-    char mytitle[24]="";
-    char mytext[128]="";
+    char *mytitle;
+    char *mytext;
 
     char * pErrMsg = 0;
     int ret = 0;
     char *zSQL;
-     const char * sInsert_lst = "insert into tLst values('%d',(SELECT datetime('now')),\
+     const char * sInsert_lst = "insert into tLst values('%d',(SELECT datetime('now', 'localtime')),\
 '%d','%d','%d','%d','%s','%s');";
-      const char * sInsert_pic = "insert into tPic values('%d',(SELECT datetime('now')),\
+      const char * sInsert_pic = "insert into tPic values('%d',(SELECT datetime('now', 'localtime')),\
 '%d', '%s');";
-      const char * sInsert_txt = "insert into tTxt values('%d',(SELECT datetime('now')),\
+      const char * sInsert_txt = "insert into tTxt values('%d',(SELECT datetime('now', 'localtime')),\
 '%d', '%s','%s','%s');";
 
     assert(websValid(wp));
@@ -1081,14 +1081,9 @@ if (scaselessmatch(wp->method, "POST")) {
     upfile_s = sfmt("%s/img_files/%04d.jpg", document,nextpic);
     logmsg(2,"%s\n",upfile_s);
             
-    for (s = hashFirst(wp->vars); s; s = hashNext(wp->vars, s)) {
-        //logmsg(2, "[%s]=[%s]\r\n", s->name.value.string, s->content.value.string);
-        if(scaselessmatch(s->name.value.string,"mytitle")){
-            snprintf(mytitle,sizeof(mytitle),"%s",s->content.value.string);
-        } else if (scaselessmatch(s->name.value.string,"mytext")){
-            snprintf(mytext,sizeof(mytext),"%s",s->content.value.string);
-        }
-    }
+    mytitle=websGetVar(wp, "mytitle", "");
+    mytext=websGetVar(wp, "mytext", "");
+    
     for (s = hashFirst(wp->files); s; s = hashNext(wp->files, s)) {
         up = s->content.value.symbol;
         //upfile = sfmt("%sdog_files/%s", document, up->clientFilename);
@@ -1199,14 +1194,14 @@ void uploadTexts(Webs *wp)
     WebsKey         *s;
     int currentpage=0;
     int currenttxt=0;
-    char *mytitle="";
-    char *mytext="";
+    char *mytitle;
+    char *mytext;
 
     char * pErrMsg = 0;
     int ret = 0;
     char *zSQL;
     const char * sUpdate_txt = "update tTxt set txt_title='%s' , txt_content='%s' where id=%d;";
-    const char * sInsert_txt = "insert into tTxt (txt_time,lst_id,author,txt_title,txt_content) values((SELECT datetime('now')),'%d', '%s','%s','comment');";
+    const char * sInsert_txt = "insert into tTxt (txt_time,lst_id,author,txt_title,txt_content) values((SELECT datetime('now', 'localtime')),'%d', '%s','%s','comment');";
     // "insert into table1 (data,time,.....) values ('xxxxx','xxxx',....)"
 #if 0
     const char * sCreate_txt = "create table if not exists tTxt(id INTEGER PRIMARY KEY,\
@@ -1221,16 +1216,8 @@ void uploadTexts(Webs *wp)
         currenttxt=sqlGetText(currentpage);
         printf("current[%d][%d]\n",currentpage,currenttxt);
               
-        for (s = hashFirst(wp->vars); s; s = hashNext(wp->vars, s)) {
-            //logmsg(2, "[%s]=[%s]\r\n", s->name.value.string, s->content.value.string);
-            if(scaselessmatch(s->name.value.string,"mytitle")){
-                mytitle=sfmt("%s",s->content.value.string);
-                printf("mytitle[%s]\n",mytitle);
-            } else if (scaselessmatch(s->name.value.string,"mytext")){
-                mytext=sfmt("%s",s->content.value.string);
-                printf("mytext[%s]\n",mytext);
-            }
-        }
+        mytitle=websGetVar(wp, "mytitle", "");
+        mytext=websGetVar(wp, "mytext", "");
 
         if(scaselessmatch(mytext,"comment")){
             zSQL = sqlite3_mprintf(sInsert_txt,currentpage,wp->username,mytitle);
@@ -1258,8 +1245,6 @@ void uploadTexts(Webs *wp)
     websWriteEndHeaders(wp);
     websWrite(wp, "{\"mytitle\":\"%s\",\"mytext\":\"%s\"}",mytitle,mytext);
     websDone(wp);
-    wfree(mytitle);
-    wfree(mytext);
 }
 
 void deletePage(Webs *wp)
