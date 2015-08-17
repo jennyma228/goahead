@@ -882,7 +882,7 @@ int CreateTable(sqlite3 * db)
  '%d','%d','%d','%d','150x120','800x600');";
   const char * sInsert_pic = "insert into tPic values(NULL,(SELECT datetime('now', 'localtime')),\
  '%d', 'admin');";
-  const char * sInsert_txt = "insert into tTxt values(NULL,(SELECT datetime('now, 'localtime'')),\
+  const char * sInsert_txt = "insert into tTxt values(NULL,(SELECT datetime('now', 'localtime')),\
  '%d', 'admin','%d','%d');";
 
   const char * sUpdate_lst = "update tLst set pic_ft1='640x330' where item=1;";
