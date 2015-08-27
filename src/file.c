@@ -60,6 +60,19 @@ static bool fileHandler(Webs *wp)
             wfree(tmp);
             return 1;
         }
+       printf( "filename %s\n", wp->filename);
+       printf( "path %s\n", wp->path);
+       if(wp->path[0]=='/' &&
+        wp->path[1]=='c' &&
+        wp->path[2]=='/' )
+        {
+           char            *redirect;
+           redirect = sfmt("http://pic.nipic.com/%s", & wp->path[3]);
+           printf("redirect to %s",redirect);
+           websRedirect(wp,redirect);
+           wfree(redirect);
+           return 1;
+        }
         if (websPageOpen(wp, O_RDONLY | O_BINARY, 0666) < 0) {
 #if ME_DEBUG
             if (wp->referrer) {
