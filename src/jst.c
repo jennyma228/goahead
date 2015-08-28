@@ -9,7 +9,8 @@
 #include    "goahead.h"
 #include    "js.h"
 
-char contentip[32];
+char contentip[32]="183.37.158.59";
+struct sockaddr_in adr_inet; /* AF_INET */
 
 #if ME_GOAHEAD_JAVASCRIPT
 /********************************** Locals ************************************/
@@ -1414,23 +1415,56 @@ void returnIndex(Webs *wp)
     wfree(redirect);
 }
 
+#if 0
+bool isValidIP(char *ip){
+    if(ip==NULL)
+        return false;
+    char temp[4];
+    int count=0;
+    while(true){
+        int index=0;
+        while(*ip!='\0' && *ip!='.' && count<4){
+            temp[index++]=*ip;
+            ip++;
+        }
+        if(index==4)
+            return false;
+        temp[index]='\0';
+        int num=atoi(temp);
+        if(!(num>=0 && num<=255))
+            return false;
+        count++;
+        if(*ip=='\0'){
+            if(count==4)
+                return true;
+            else
+                return false;
+        }else
+            ip++;
+    }
+}
+#endif
+
 void contentIp(Webs *wp)
 {
-    //char            *redirect;
+    //memset(&adr_inet, 0, sizeof(adr_inet));
+    //adr_inet.sin_family = AF_INET;
+    //adr_inet.sin_port = htons(5000); 
 
     assert(websValid(wp));
-    logmsg(2, wp->input.servp);
-    snprintf(contentip,sizeof(contentip),"http://%s:8080",wp->input.servp);
     websSetStatus(wp, 200);
     websWriteHeaders(wp, -1, 0);
     websWriteHeader(wp, "Content-Type", "text/html");
     websWriteEndHeaders(wp);
-    websWrite(wp,"%s\n",wp->input.servp);
+    if( inet_aton(wp->input.servp, &adr_inet.sin_addr)){
+        snprintf(contentip,sizeof(contentip),"%s",wp->input.servp);
+        logmsg(2, "Content IP[%s]\n",contentip);
+        websWrite(wp,"Content IP[%s]\n",contentip);
+    }  else {
+        logmsg(2, "Content IP error\n");
+        websWrite(wp,"Content IP error\n");
+    }
     websDone(wp);
-    //redirect = sfmt("/index.jst?mid=%01d", channel);
-    //logmsg(2,"redirect to %s",redirect);
-    //websRedirect(wp,redirect);
-    //wfree(redirect);
 }
 
 void getComment(Webs *wp)

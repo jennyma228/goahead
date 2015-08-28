@@ -27,6 +27,7 @@ static bool fileHandler(Webs *wp)
     char            *tmp, *date;
     ssize           nchars;
     int             code;
+    extern  char contentip[32];
 
     assert(websValid(wp));
     assert(wp->method);
@@ -60,16 +61,16 @@ static bool fileHandler(Webs *wp)
             wfree(tmp);
             return 1;
         }
-       printf( "filename %s\n", wp->filename);
-       printf( "path %s\n", wp->path);
+       //printf( "filename %s\n", wp->filename);
+       //printf( "path %s\n", wp->path);
        if(wp->path[0]=='/' &&
-        wp->path[1]=='u' &&
-        wp->path[2]=='e' )
+        wp->path[1]=='u'  &&
+        wp->path[2]=='e'  &&
+        contentip[0]!='\0'  )
         {
            char            *redirect;
-           extern  char contentip[32];
-           redirect = sfmt("%s/%s", contentip,& wp->path[1]);
-           printf("redirect to %s",redirect);
+           redirect = sfmt("http://%s:5000/%s", contentip,& wp->path[1]);
+           printf("redirect to %s\n",redirect);
            websRedirect(wp,redirect);
            wfree(redirect);
            return 1;
