@@ -1681,6 +1681,7 @@ PUBLIC void deletePage(struct Webs *wp);
 PUBLIC void nextPage(struct Webs *wp);
 PUBLIC void returnIndex(struct Webs *wp);
 PUBLIC void getComment(struct Webs *wp);
+PUBLIC void contentIp(struct Webs *wp);
 PUBLIC void deleteComment(struct Webs *wp);
 #endif
 /********************************** Defines ***********************************/

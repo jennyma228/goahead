@@ -9,6 +9,8 @@
 #include    "goahead.h"
 #include    "js.h"
 
+char contentip[32];
+
 #if ME_GOAHEAD_JAVASCRIPT
 /********************************** Locals ************************************/
 
@@ -1410,6 +1412,25 @@ void returnIndex(Webs *wp)
     logmsg(2,"redirect to %s",redirect);
     websRedirect(wp,redirect);
     wfree(redirect);
+}
+
+void contentIp(Webs *wp)
+{
+    //char            *redirect;
+
+    assert(websValid(wp));
+    logmsg(2, wp->input.servp);
+    snprintf(contentip,sizeof(contentip),"http://%s:8080",wp->input.servp);
+    websSetStatus(wp, 200);
+    websWriteHeaders(wp, -1, 0);
+    websWriteHeader(wp, "Content-Type", "text/html");
+    websWriteEndHeaders(wp);
+    websWrite(wp,"%s\n",wp->input.servp);
+    websDone(wp);
+    //redirect = sfmt("/index.jst?mid=%01d", channel);
+    //logmsg(2,"redirect to %s",redirect);
+    //websRedirect(wp,redirect);
+    //wfree(redirect);
 }
 
 void getComment(Webs *wp)

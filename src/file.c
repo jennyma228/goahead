@@ -63,11 +63,12 @@ static bool fileHandler(Webs *wp)
        printf( "filename %s\n", wp->filename);
        printf( "path %s\n", wp->path);
        if(wp->path[0]=='/' &&
-        wp->path[1]=='c' &&
-        wp->path[2]=='/' )
+        wp->path[1]=='u' &&
+        wp->path[2]=='e' )
         {
            char            *redirect;
-           redirect = sfmt("http://pic.nipic.com/%s", & wp->path[3]);
+           extern  char contentip[32];
+           redirect = sfmt("%s/%s", contentip,& wp->path[1]);
            printf("redirect to %s",redirect);
            websRedirect(wp,redirect);
            wfree(redirect);

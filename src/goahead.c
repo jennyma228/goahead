@@ -146,6 +146,7 @@ MAIN(goahead, int argc, char **argv, char **envp)
     websDefineAction("nextPage", nextPage);
     websDefineAction("returnIndex", returnIndex);
     websDefineAction("getComment", getComment);
+    websDefineAction("content", contentIp);
     websDefineAction("deleteComment", deleteComment);
 #endif
 #if USING_SQLITE
