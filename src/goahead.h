@@ -3188,6 +3188,7 @@ PUBLIC int websJstGetChannel(int jid, Webs *wp, int argc, char **argv);
 PUBLIC int websJstGetPage(int jid, Webs *wp, int argc, char **argv);
 PUBLIC int websJstGetShow(int jid, Webs *wp, int argc, char **argv);
 PUBLIC int websJstGetLogin(int jid, Webs *wp, int argc, char **argv);
+PUBLIC int websJstGetContentIP(int jid, Webs *wp, int argc, char **argv);
 #endif
 
 #if FUTURE

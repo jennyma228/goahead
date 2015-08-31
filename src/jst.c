@@ -202,6 +202,7 @@ PUBLIC int websJstOpen()
     websDefineJst("get_page", websJstGetPage);
     websDefineJst("get_show", websJstGetShow);
     websDefineJst("get_login", websJstGetLogin);
+    websDefineJst("get_ip", websJstGetContentIP);
     websDefineHandler("jst", 0, jstHandler, closeJst, 0);
     return 0;
 }
@@ -560,6 +561,19 @@ PUBLIC int websJstGetLogin(int jid, Webs *wp, int argc, char **argv)
     
      return 0;
 }
+
+/*
+    Javascript write command. This implemements <% get_ip(1,1,1); %> command
+ */
+PUBLIC int websJstGetContentIP(int jid, Webs *wp, int argc, char **argv)
+{
+    assert(websValid(wp));
+
+    websWrite(wp, "%s",contentip);
+    
+    return 0;
+}
+
 
 /*
     Find s2 in s1. We skip leading white space in s1.  Return a pointer to the location in s1 after s2 ends.
