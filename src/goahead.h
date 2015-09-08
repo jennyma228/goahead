@@ -1683,6 +1683,7 @@ PUBLIC void returnIndex(struct Webs *wp);
 PUBLIC void getComment(struct Webs *wp);
 PUBLIC void contentIp(struct Webs *wp);
 PUBLIC void deleteComment(struct Webs *wp);
+PUBLIC void getList(struct Webs *wp);
 #endif
 /********************************** Defines ***********************************/
 

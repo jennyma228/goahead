@@ -148,6 +148,7 @@ MAIN(goahead, int argc, char **argv, char **envp)
     websDefineAction("getComment", getComment);
     websDefineAction("content", contentIp);
     websDefineAction("deleteComment", deleteComment);
+    websDefineAction("getList", getList);
 #endif
 #if USING_SQLITE
 // creat sqlite database

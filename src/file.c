@@ -188,7 +188,7 @@ static void fileClose()
 
 PUBLIC void websFileOpen()
 {
-    websIndex = sclone("index.jst?mid=1");
+    websIndex = sclone("index.jst");
     websDefineHandler("file", 0, fileHandler, fileClose, 0);
 }
 

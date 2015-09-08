@@ -669,6 +669,7 @@ static int websGetPage( Webs *wp)
 
 static int websGetQdata(Webs *wp, char *option)
 {
+#if 0
     WebsKey         *s;
     int value=0;
     
@@ -683,6 +684,13 @@ static int websGetQdata(Webs *wp, char *option)
         }
     }
    return value;
+#else
+     char *getdata;
+     assert(websValid(wp));
+
+    getdata=websGetVar(wp,option,"");
+    return _atoi(getdata);
+#endif
 }
 #if USING_SQLITE
 static int sql_callback(void * data, int col_count, char ** col_values, char ** col_Name)
@@ -1572,6 +1580,98 @@ void deleteComment(Webs *wp)
     websWriteHeader(wp, "Content-Type", "text/html");
     websWriteEndHeaders(wp);
     websWrite(wp,sOutput,txt_id);
+    websDone(wp);
+}
+
+void getList(Webs *wp)
+{
+    int channel_id;
+    int lst_id;
+    
+    char * pErrMsg = 0;
+    int ret = 0;
+    char *zSQL;
+    int nrow = 0;
+    int ncolumn = 0;
+    char **chAllResult; //Array for Result
+    
+    char sTime[20]="";
+    char sAuth[20]="";
+    char sPic[20]="";
+    char sTitle[40]="";
+    char sText[40]="";
+    char sMode[20]="";
+    
+    const char * sSelect_toplist = "SELECT *  FROM tLst ORDER BY id DESC limit 10 offset %d;";
+
+    const char * sOutputFirst =  "{\"index\": [";
+    char * sOutput =  "{\"time\":\"%s\",\"pic\":\"%s\",\"auth\":\"%s\",\"title\":\"%s\",\"text\":\"%s\",\"mode\":\"%s\"}";
+    const char * sOutputMiddle =  ",";
+    const char * sOutputLast =  "]}";
+    
+    assert(websValid(wp));
+    channel_id=_atoi(websGetVar(wp, "channel_id", ""));
+    lst_id=_atoi(websGetVar(wp, "lst_id", ""));
+    printf("channel_id[%d]lst_id[%d]\n",channel_id,lst_id);
+    
+    websSetStatus(wp, 200);
+    websWriteHeaders(wp, -1, 0);
+    websWriteHeader(wp, "Content-Type", "text/html");
+    websWriteEndHeaders(wp);
+
+    if(channel_id==1){
+        zSQL = sqlite3_mprintf(sSelect_toplist,0);
+        logmsg(2,"%s",zSQL);
+        ret = sqlite3_get_table( sqldb, zSQL, &chAllResult , &nrow , &ncolumn , &pErrMsg );
+        sqlite3_free(zSQL);
+        if(ret != SQLITE_OK){
+          printf("SELECT tTxt error: %s\n", pErrMsg);
+          sqlite3_free(pErrMsg);
+        } else {
+          if(nrow>0){ int i;
+            websWrite(wp,"%s",sOutputFirst);
+            for(i=1;;i++)
+            {
+                sqlGetTable("tPic", _atoi(chAllResult[i*ncolumn+2]),"author",sAuth,sizeof(sAuth));
+                sqlGetTable("tTxt", _atoi(chAllResult[i*ncolumn+3]),"txt_title",sTitle,sizeof(sTitle));
+                sqlGetTable("tTxt", _atoi(chAllResult[i*ncolumn+3]),"txt_content",sText,sizeof(sText));
+                printf( "Index[%s][%s][%s][%s][%s][%s]\n",chAllResult[i*ncolumn+1],chAllResult[i*ncolumn+2],sAuth,sTitle,sText,chAllResult[i*ncolumn+7]);
+                websWrite(wp,sOutput,chAllResult[i*ncolumn+1],chAllResult[i*ncolumn+2],sTitle,sTitle,sText,chAllResult[i*ncolumn+7]);
+                if((i==nrow)||(i==10)) break;
+                websWrite(wp,"%s",sOutputMiddle);
+            }
+            websWrite(wp,"%s",sOutputLast);
+          } else {
+              printf( "No txt!@page[%d}!\n",lst_id);
+              websWrite(wp,"%s",sOutputFirst);
+              websWrite(wp,"%s","{,}");
+              websWrite(wp,"%s",sOutputLast);
+          }
+        }
+        sqlite3_free_table(chAllResult);
+    }else{
+        int i;int lst,pic,txt;
+        websWrite(wp,"%s",sOutputFirst);
+        for(i=1;i<=10;i++)
+        {
+            lst=sqlGetList(channel_id-1,i);
+            pic=sqlGetPicture(lst);
+            txt=sqlGetText(lst);
+                
+            sqlGetTable("tLst", lst,"lst_time",sTime,sizeof(sTime));
+            sqlGetTable("tLst", lst,"pic_id",sPic,sizeof(sPic));
+            sqlGetTable("tLst", lst,"pic_ft2",sMode,sizeof(sMode));
+            sqlGetTable("tPic", pic,"author",sAuth,sizeof(sAuth));
+            sqlGetTable("tTxt", txt,"txt_title",sTitle,sizeof(sTitle));
+            sqlGetTable("tTxt", txt,"txt_content",sText,sizeof(sText));
+            printf( "Index[%s][%s][%s][%s][%s][%s]\n",sTime,sPic,sAuth,sTitle,sText,sMode);
+            websWrite(wp,sOutput,sTime,sPic,sAuth,sTitle,sText,sMode);
+            if(i==10) break;
+            websWrite(wp,"%s",sOutputMiddle);
+        }
+        websWrite(wp,"%s",sOutputLast);
+    }
+    
     websDone(wp);
 }
 
