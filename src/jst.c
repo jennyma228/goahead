@@ -475,12 +475,13 @@ PUBLIC int websJstGetPage(int jid, Webs *wp, int argc, char **argv)
  */
 PUBLIC int websJstGetChannel(int jid, Webs *wp, int argc, char **argv)
 {
-    int pg=0,id=0,op=0,ch=0;
+    int pg=0,id=0,ch=0;
    
    assert(websValid(wp));
 
     id=websGetQdata(wp,"mid");
 
+#if 0
    if(argc ) {
       assert(argv);
        op=_atoi(argv[0]);
@@ -501,7 +502,15 @@ PUBLIC int websJstGetChannel(int jid, Webs *wp, int argc, char **argv)
     } else {
        websWrite(wp, "%s","off");
     }
-
+#else
+    pg=websGetPage(wp);
+    if(pg){
+         ch=sqlGetChannel(id);
+     } else {
+         ch=id;
+     }
+     websWrite(wp, "%d",ch);
+#endif
     return 0;
 }
 
@@ -1620,7 +1629,7 @@ void getList(Webs *wp)
     websWriteHeader(wp, "Content-Type", "text/html");
     websWriteEndHeaders(wp);
 
-    if(channel_id==1){
+    if(channel_id==0){
         zSQL = sqlite3_mprintf(sSelect_toplist,0);
         //logmsg(2,"%s",zSQL);
         ret = sqlite3_get_table( sqldb, zSQL, &chAllResult , &nrow , &ncolumn , &pErrMsg );
@@ -1656,7 +1665,7 @@ void getList(Webs *wp)
         websWrite(wp,"%s",sOutputFirst);
         for(i=1;i<=10;i++)
         {
-            lst=sqlGetList(channel_id-1,i);
+            lst=sqlGetList(channel_id,i);
             pic=sqlGetPicture(lst);
             txt=sqlGetText(lst);
                 
