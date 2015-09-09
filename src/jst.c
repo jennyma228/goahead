@@ -1595,6 +1595,7 @@ void getList(Webs *wp)
     int ncolumn = 0;
     char **chAllResult; //Array for Result
     
+    char sPage[20]="";
     char sTime[20]="";
     char sAuth[20]="";
     char sPic[20]="";
@@ -1605,14 +1606,14 @@ void getList(Webs *wp)
     const char * sSelect_toplist = "SELECT *  FROM tLst ORDER BY id DESC limit 10 offset %d;";
 
     const char * sOutputFirst =  "{\"index\": [";
-    char * sOutput =  "{\"time\":\"%s\",\"pic\":\"%s\",\"auth\":\"%s\",\"title\":\"%s\",\"text\":\"%s\",\"mode\":\"%s\"}";
+    char * sOutput =  "{\"page\":\"%s\",\"time\":\"%s\",\"pic\":\"%s\",\"auth\":\"%s\",\"title\":\"%s\",\"text\":\"%s\",\"mode\":\"%s\"}";
     const char * sOutputMiddle =  ",";
     const char * sOutputLast =  "]}";
     
     assert(websValid(wp));
     channel_id=_atoi(websGetVar(wp, "channel_id", ""));
     lst_id=_atoi(websGetVar(wp, "lst_id", ""));
-    printf("channel_id[%d]lst_id[%d]\n",channel_id,lst_id);
+    //printf("channel_id[%d]lst_id[%d]\n",channel_id,lst_id);
     
     websSetStatus(wp, 200);
     websWriteHeaders(wp, -1, 0);
@@ -1621,7 +1622,7 @@ void getList(Webs *wp)
 
     if(channel_id==1){
         zSQL = sqlite3_mprintf(sSelect_toplist,0);
-        logmsg(2,"%s",zSQL);
+        //logmsg(2,"%s",zSQL);
         ret = sqlite3_get_table( sqldb, zSQL, &chAllResult , &nrow , &ncolumn , &pErrMsg );
         sqlite3_free(zSQL);
         if(ret != SQLITE_OK){
@@ -1635,8 +1636,9 @@ void getList(Webs *wp)
                 sqlGetTable("tPic", _atoi(chAllResult[i*ncolumn+2]),"author",sAuth,sizeof(sAuth));
                 sqlGetTable("tTxt", _atoi(chAllResult[i*ncolumn+3]),"txt_title",sTitle,sizeof(sTitle));
                 sqlGetTable("tTxt", _atoi(chAllResult[i*ncolumn+3]),"txt_content",sText,sizeof(sText));
-                printf( "Index[%s][%s][%s][%s][%s][%s]\n",chAllResult[i*ncolumn+1],chAllResult[i*ncolumn+2],sAuth,sTitle,sText,chAllResult[i*ncolumn+7]);
-                websWrite(wp,sOutput,chAllResult[i*ncolumn+1],chAllResult[i*ncolumn+2],sTitle,sTitle,sText,chAllResult[i*ncolumn+7]);
+                snprintf(sPic,sizeof(sPic),"%04d",_atoi(chAllResult[i*ncolumn+2]));
+                //printf( "Index[%s][%s][%s][%s][%s][%s][%s]\n",chAllResult[i*ncolumn],chAllResult[i*ncolumn+1],sPic,sAuth,sTitle,sText,chAllResult[i*ncolumn+7]);
+                websWrite(wp,sOutput,chAllResult[i*ncolumn],chAllResult[i*ncolumn+1],sPic,sTitle,sTitle,sText,chAllResult[i*ncolumn+6]);
                 if((i==nrow)||(i==10)) break;
                 websWrite(wp,"%s",sOutputMiddle);
             }
@@ -1659,13 +1661,14 @@ void getList(Webs *wp)
             txt=sqlGetText(lst);
                 
             sqlGetTable("tLst", lst,"lst_time",sTime,sizeof(sTime));
-            sqlGetTable("tLst", lst,"pic_id",sPic,sizeof(sPic));
-            sqlGetTable("tLst", lst,"pic_ft2",sMode,sizeof(sMode));
+            sqlGetTable("tLst", lst,"pic_ft1",sMode,sizeof(sMode));
             sqlGetTable("tPic", pic,"author",sAuth,sizeof(sAuth));
             sqlGetTable("tTxt", txt,"txt_title",sTitle,sizeof(sTitle));
             sqlGetTable("tTxt", txt,"txt_content",sText,sizeof(sText));
-            printf( "Index[%s][%s][%s][%s][%s][%s]\n",sTime,sPic,sAuth,sTitle,sText,sMode);
-            websWrite(wp,sOutput,sTime,sPic,sAuth,sTitle,sText,sMode);
+            snprintf(sPage,sizeof(sPage),"%d",lst);
+            snprintf(sPic,sizeof(sPic),"%04d",pic);
+            //printf( "Index[%s][%s][%s][%s][%s][%s][%s]\n",sPage,sTime,sPic,sAuth,sTitle,sText,sMode);
+            websWrite(wp,sOutput,sPage,sTime,sPic,sAuth,sTitle,sText,sMode);
             if(i==10) break;
             websWrite(wp,"%s",sOutputMiddle);
         }
