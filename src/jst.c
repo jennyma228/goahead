@@ -1185,8 +1185,10 @@ if (scaselessmatch(wp->method, "POST")) {
     websSetStatus(wp, 200);
     websWriteHeaders(wp, -1, 0);
     websWriteHeader(wp, "Content-Type", "text/plain");
+    websWriteHeader(wp, "Access-Control-Allow-Origin", "*");
     websWriteEndHeaders(wp);
-    websWrite(wp, "\r\nOK\r\n");
+    //websWrite(wp, "\r\nOK\r\n");
+    websWrite(wp, "{\"mytitle\":\"ok\",\"mytext\":\"ok\"}");
     websDone(wp);
 #else
 	
