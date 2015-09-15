@@ -1225,6 +1225,108 @@ if (scaselessmatch(wp->method, "POST")) {
 }
 #endif
 
+/*
+    Dump the file upload details. Don't actually do anything with the uploaded file.
+ */
+void uploadPage(Webs *wp)
+{
+    char            *remote_file;
+    char            *upfile_s;
+    //char uri[256];
+    int nextpage=0,nextpic=0,nexttxt=0;
+    char  channel=0,item=0;
+    char pic_ft1[10]="150x120";
+    char pic_ft2[10]="html";
+    char *mytitle;
+    char *mytext;
+    char *mycontent;
+    char *myname;
+    char *mypw;
+
+    char * pErrMsg = 0;
+    int ret = 0;
+    char *zSQL;
+     const char * sInsert_lst = "insert into tLst values('%d',(SELECT datetime('now', 'localtime')),\
+'%d','%d','%d','%d','%s','%s');";
+      const char * sInsert_pic = "insert into tPic values('%d',(SELECT datetime('now', 'localtime')),\
+'%d', '%s');";
+      const char * sInsert_txt = "insert into tTxt values('%d',(SELECT datetime('now', 'localtime')),\
+'%d', '%s','%s','%s');";
+
+    assert(websValid(wp));
+        
+if (scaselessmatch(wp->method, "POST")) {
+    char document[128];
+    snprintf(document,sizeof(document),"%s",websGetDocuments());
+    if(document[strlen(document)-1]=='/')
+        document[strlen(document)-1]='\0';
+    
+    nextpage=sqlGetMax("tLst")+1;
+    nextpic=sqlGetMax("tPic")+1;
+    nexttxt=sqlGetMax("tTxt")+1;
+    channel=_atoi(websGetVar(wp, "pagetype", ""));
+    logmsg(2,"channel=%d\n",channel);
+    item=_atoi(websGetVar(wp, "pagesubject", ""));
+    logmsg(2,"item=%d\n",item);
+
+    upfile_s = sfmt("%s/img_files/%04d.jpg", document,nextpic);// thumbnail
+    logmsg(2,"upfile_s=%s\n",upfile_s);
+    remote_file = websGetVar(wp, "thumbnail", "");
+    websDecodeUrl(remote_file, remote_file, strlen(remote_file));
+    logmsg(2,"remote_file=%s\n",remote_file);
+
+    mytitle=websGetVar(wp, "pagetitle", "");
+    logmsg(2,"pagetitle=%s\n",mytitle);
+    mytext=websGetVar(wp, "mytext", "");
+    websDecodeUrl(mytext, mytext, strlen(mytext));
+    logmsg(2,"mytext=%s\n",mytext);
+    mycontent=websGetVar(wp, "content", "");
+    websDecodeUrl(mycontent, mycontent, strlen(mycontent));
+    logmsg(2,"mycontent=%s\n",mycontent);
+    myname=websGetVar(wp, "yourname", "");
+    logmsg(2,"myname=%s\n",myname);
+    mypw=websGetVar(wp, "password", "");
+    logmsg(2,"mypw=%s\n",mypw);
+
+    
+    //snprintf(uri,sizeof(uri),"convert -scale %s %s %s",pic_ft2,up->filename,upfile);
+
+    if (scaselessmatch(pic_ft2, "html2")) {
+        zSQL = sqlite3_mprintf(sInsert_lst,nextpage,nextpic,nexttxt,channel,item,pic_ft1,pic_ft2);
+        ret = sqlite3_exec( sqldb, zSQL, 0, 0, &pErrMsg);
+        printf("%s\n",zSQL);
+        sqlite3_free(zSQL);
+        if(ret != SQLITE_OK){
+              printf("Insert tLst error: %s\n", pErrMsg);
+              sqlite3_free(pErrMsg);
+          }
+        zSQL = sqlite3_mprintf(sInsert_pic,nextpic,nextpage,wp->username);
+        ret = sqlite3_exec( sqldb, zSQL, 0, 0, &pErrMsg);
+        printf("%s\n",zSQL);
+        sqlite3_free(zSQL);
+        if(ret != SQLITE_OK){
+              printf("Insert tLst error: %s\n", pErrMsg);
+              sqlite3_free(pErrMsg);
+          }
+        zSQL = sqlite3_mprintf(sInsert_txt,nexttxt,nextpage,wp->username,mytitle,mytext);
+        ret = sqlite3_exec( sqldb, zSQL, 0, 0, &pErrMsg);
+        printf("%s\n",zSQL);
+        sqlite3_free(zSQL);
+        if(ret != SQLITE_OK){
+              printf("Insert tLst error: %s\n", pErrMsg);
+              sqlite3_free(pErrMsg);
+          }
+        }
+    }
+    websSetStatus(wp, 200);
+    websWriteHeaders(wp, -1, 0);
+    websWriteHeader(wp, "Content-Type", "text/plain");
+    websWriteHeader(wp, "Access-Control-Allow-Origin", "*");
+    websWriteEndHeaders(wp);
+    websWrite(wp, "{\"mytitle\":\"ok\",\"mytext\":\"ok\"}");
+    websDone(wp);
+}
+
 void uploadTexts(Webs *wp)
 {
     //WebsKey         *s;

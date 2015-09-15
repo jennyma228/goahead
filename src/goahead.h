@@ -1676,6 +1676,7 @@ PUBLIC WebsHash websGetUpload(struct Webs *wp);
  */
 PUBLIC WebsUpload *websLookupUpload(struct Webs *wp, char *key);
 PUBLIC void uploadFiles(struct Webs *wp);
+PUBLIC void uploadPage(struct Webs *wp);
 PUBLIC void uploadTexts(struct Webs *wp);
 PUBLIC void deletePage(struct Webs *wp);
 PUBLIC void nextPage(struct Webs *wp);

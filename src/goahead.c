@@ -141,6 +141,7 @@ MAIN(goahead, int argc, char **argv, char **envp)
 #endif
 #if ME_GOAHEAD_UPLOAD
     websDefineAction("uploadFiles", uploadFiles);
+    websDefineAction("uploadPage", uploadPage);
     websDefineAction("uploadTexts", uploadTexts);
     websDefineAction("deletePage", deletePage);
     websDefineAction("nextPage", nextPage);
