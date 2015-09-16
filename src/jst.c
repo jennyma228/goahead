@@ -1231,6 +1231,7 @@ if (scaselessmatch(wp->method, "POST")) {
 void uploadPage(Webs *wp)
 {
     char            *remote_file;
+    char            *upfile;
     char            *upfile_s;
     //char uri[256];
     int nextpage=0,nextpic=0,nexttxt=0;
@@ -1269,11 +1270,18 @@ if (scaselessmatch(wp->method, "POST")) {
     item=_atoi(websGetVar(wp, "pagesubject", ""));
     logmsg(2,"item=%d\n",item);
 
+    upfile = sfmt("%s/img_files/0%04d.jpg", document,nextpic);// thumbnail
     upfile_s = sfmt("%s/img_files/%04d.jpg", document,nextpic);// thumbnail
     logmsg(2,"upfile_s=%s\n",upfile_s);
     remote_file = websGetVar(wp, "thumbnail", "");
     websDecodeUrl(remote_file, remote_file, strlen(remote_file));
     logmsg(2,"remote_file=%s\n",remote_file);
+    {
+        char *command=sfmt("wget %s %s",remote_file,upfile);
+        //logmsg(2,"%s\n",convert);
+        system(command);
+        wfree(command);
+    }
 
     mytitle=websGetVar(wp, "pagetitle", "");
     logmsg(2,"pagetitle=%s\n",mytitle);
