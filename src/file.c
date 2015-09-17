@@ -69,7 +69,12 @@ static bool fileHandler(Webs *wp)
         contentip[0]!='\0'  )
         {
            char            *redirect;
-           redirect = sfmt("http://%s:5000/%s", contentip,& wp->path[1]);
+           if(smatch(wp->host,"localhost"))
+            {
+               redirect = sfmt("http://%s:5000/%s", wp->host,& wp->path[1]);
+            }else{
+               redirect = sfmt("http://%s:5000/%s", contentip,& wp->path[1]);
+            }
            printf("redirect to %s\n",redirect);
            websRedirect(wp,redirect);
            wfree(redirect);

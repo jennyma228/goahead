@@ -3675,6 +3675,7 @@ PUBLIC bool websVerifyPasswordFromCustom(Webs *wp);
     @stability Evolving
  */
 PUBLIC bool websVerifyPasswordFromFile(Webs *wp);
+PUBLIC bool websVerifyPasswordFromPost(char *username,char *password);
 
 #if ME_COMPILER_HAS_PAM
 /**

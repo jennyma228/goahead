@@ -578,7 +578,12 @@ PUBLIC int websJstGetContentIP(int jid, Webs *wp, int argc, char **argv)
 {
     assert(websValid(wp));
 
-    websWrite(wp, "%s",contentip);
+    if(smatch(wp->host,"localhost"))
+     {
+        websWrite(wp, "%s",wp->host);
+     }else{
+        websWrite(wp, "%s",contentip);
+     }
     
     return 0;
 }
@@ -1170,7 +1175,7 @@ if (scaselessmatch(wp->method, "POST")) {
     printf("%s\n",zSQL);
     sqlite3_free(zSQL);
     if(ret != SQLITE_OK){
-          printf("Insert tLst error: %s\n", pErrMsg);
+          printf("Insert tPic error: %s\n", pErrMsg);
           sqlite3_free(pErrMsg);
       }
     zSQL = sqlite3_mprintf(sInsert_txt,nexttxt,nextpage,wp->username,mytitle,mytext);
@@ -1178,7 +1183,7 @@ if (scaselessmatch(wp->method, "POST")) {
     printf("%s\n",zSQL);
     sqlite3_free(zSQL);
     if(ret != SQLITE_OK){
-          printf("Insert tLst error: %s\n", pErrMsg);
+          printf("Insert tTxt error: %s\n", pErrMsg);
           sqlite3_free(pErrMsg);
       }
     }
@@ -1233,7 +1238,9 @@ void uploadPage(Webs *wp)
     char            *remote_file;
     char            *upfile;
     char            *upfile_s;
+    char            *uppage;
     //char uri[256];
+    char document[128];
     int nextpage=0,nextpic=0,nexttxt=0;
     char  channel=0,item=0;
     char pic_ft1[10]="150x120";
@@ -1257,7 +1264,25 @@ void uploadPage(Webs *wp)
     assert(websValid(wp));
         
 if (scaselessmatch(wp->method, "POST")) {
-    char document[128];
+    websSetStatus(wp, 200);
+    websWriteHeaders(wp, -1, 0);
+    websWriteHeader(wp, "Content-Type", "text/plain");
+    websWriteHeader(wp, "Access-Control-Allow-Origin", "*");
+    websWriteEndHeaders(wp);
+    
+    myname=websGetVar(wp, "yourname", "");
+    logmsg(2,"myname=%s\n",myname);
+    mypw=websGetVar(wp, "password", "");
+    logmsg(2,"mypw=%s\n",mypw);
+
+    if(0==websVerifyPasswordFromPost(myname,mypw))
+    {
+        logmsg(2,"VerifyPasswordFromPost NG\n");
+        websWrite(wp, "{\"status\":\"VerifyPassword Failure\",\"ErrorCode\":\"0\"}");
+        websDone(wp);
+        return;
+    }
+
     snprintf(document,sizeof(document),"%s",websGetDocuments());
     if(document[strlen(document)-1]=='/')
         document[strlen(document)-1]='\0';
@@ -1272,13 +1297,22 @@ if (scaselessmatch(wp->method, "POST")) {
 
     upfile = sfmt("%s/img_files/0%04d.jpg", document,nextpic);// thumbnail
     upfile_s = sfmt("%s/img_files/%04d.jpg", document,nextpic);// thumbnail
+    uppage = sfmt("%s/img_files/%04d.html", document,nextpage);// thumbnail
     logmsg(2,"upfile_s=%s\n",upfile_s);
     remote_file = websGetVar(wp, "thumbnail", "");
     websDecodeUrl(remote_file, remote_file, strlen(remote_file));
     logmsg(2,"remote_file=%s\n",remote_file);
-    {
-        char *command=sfmt("wget %s %s",remote_file,upfile);
-        //logmsg(2,"%s\n",convert);
+    {   // Todo  image file type  and gif
+        char *command=sfmt("wget -O %s %s",upfile,remote_file);
+        logmsg(2,"%s\n",command);
+        system(command);
+        wfree(command);
+        command=sfmt("convert -scale %s %s %s",pic_ft1,upfile,upfile_s);
+        logmsg(2,"%s\n",command);
+        system(command);
+        wfree(command);
+        command=sfmt("rm %s",upfile);
+        logmsg(2,"%s\n",command);
         system(command);
         wfree(command);
     }
@@ -1291,15 +1325,25 @@ if (scaselessmatch(wp->method, "POST")) {
     mycontent=websGetVar(wp, "content", "");
     websDecodeUrl(mycontent, mycontent, strlen(mycontent));
     logmsg(2,"mycontent=%s\n",mycontent);
-    myname=websGetVar(wp, "yourname", "");
-    logmsg(2,"myname=%s\n",myname);
-    mypw=websGetVar(wp, "password", "");
-    logmsg(2,"mypw=%s\n",mypw);
-
+    {
+         int fd;
+        if ((fd = open(uppage, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0600)) < 0) {
+            logmsg(2,"openfile error=%s\n",fd );
+        } else {
+            int len=strlen(mycontent);
+            int wlen=0;int i;
+            for(i=0;i<100;i++)
+            {
+                wlen=write(fd, mycontent,len) ;
+                len-=wlen;
+                if(len==0)
+                    break;
+            }
+            close(fd);
+        }
+    }
     
-    //snprintf(uri,sizeof(uri),"convert -scale %s %s %s",pic_ft2,up->filename,upfile);
-
-    if (scaselessmatch(pic_ft2, "html2")) {
+    if (scaselessmatch(pic_ft2, "html")) {
         zSQL = sqlite3_mprintf(sInsert_lst,nextpage,nextpic,nexttxt,channel,item,pic_ft1,pic_ft2);
         ret = sqlite3_exec( sqldb, zSQL, 0, 0, &pErrMsg);
         printf("%s\n",zSQL);
@@ -1308,30 +1352,25 @@ if (scaselessmatch(wp->method, "POST")) {
               printf("Insert tLst error: %s\n", pErrMsg);
               sqlite3_free(pErrMsg);
           }
-        zSQL = sqlite3_mprintf(sInsert_pic,nextpic,nextpage,wp->username);
+        zSQL = sqlite3_mprintf(sInsert_pic,nextpic,nextpage,myname);
         ret = sqlite3_exec( sqldb, zSQL, 0, 0, &pErrMsg);
         printf("%s\n",zSQL);
         sqlite3_free(zSQL);
         if(ret != SQLITE_OK){
-              printf("Insert tLst error: %s\n", pErrMsg);
+              printf("Insert tPic error: %s\n", pErrMsg);
               sqlite3_free(pErrMsg);
           }
-        zSQL = sqlite3_mprintf(sInsert_txt,nexttxt,nextpage,wp->username,mytitle,mytext);
+        zSQL = sqlite3_mprintf(sInsert_txt,nexttxt,nextpage,myname,mytitle,mytext);
         ret = sqlite3_exec( sqldb, zSQL, 0, 0, &pErrMsg);
         printf("%s\n",zSQL);
         sqlite3_free(zSQL);
         if(ret != SQLITE_OK){
-              printf("Insert tLst error: %s\n", pErrMsg);
+              printf("Insert tTxt error: %s\n", pErrMsg);
               sqlite3_free(pErrMsg);
           }
         }
     }
-    websSetStatus(wp, 200);
-    websWriteHeaders(wp, -1, 0);
-    websWriteHeader(wp, "Content-Type", "text/plain");
-    websWriteHeader(wp, "Access-Control-Allow-Origin", "*");
-    websWriteEndHeaders(wp);
-    websWrite(wp, "{\"mytitle\":\"ok\",\"mytext\":\"ok\"}");
+    websWrite(wp, "{\"status\":\"ok\",\"ErrorCode\":\"1\"}");
     websDone(wp);
 }
 
@@ -1723,6 +1762,7 @@ void getList(Webs *wp)
     char sTitle[40]="";
     char sText[40]="";
     char sMode[20]="";
+    char sMode2[20]="";
     
     const char * sSelect_toplist = "SELECT *  FROM tLst ORDER BY id DESC limit 10 offset %d;";
 
@@ -1757,9 +1797,18 @@ void getList(Webs *wp)
                 sqlGetTable("tPic", _atoi(chAllResult[i*ncolumn+2]),"author",sAuth,sizeof(sAuth));
                 sqlGetTable("tTxt", _atoi(chAllResult[i*ncolumn+3]),"txt_title",sTitle,sizeof(sTitle));
                 sqlGetTable("tTxt", _atoi(chAllResult[i*ncolumn+3]),"txt_content",sText,sizeof(sText));
+                if(smatch(chAllResult[i*ncolumn+7],"html"))
+                {
+                    snprintf(sMode,sizeof(sMode),"%s",chAllResult[i*ncolumn+7]);
+                    //printf("sMode2: %s\n", sMode);
+                } else {
+                    snprintf(sMode,sizeof(sMode),"%s",chAllResult[i*ncolumn+6]);
+                    //printf("sMode2: %s\n", sMode);
+                }
                 snprintf(sPic,sizeof(sPic),"%04d",_atoi(chAllResult[i*ncolumn+2]));
+                snprintf(sPage,sizeof(sPage),"%04d",_atoi(chAllResult[i*ncolumn]));
                 //printf( "Index[%s][%s][%s][%s][%s][%s][%s]\n",chAllResult[i*ncolumn],chAllResult[i*ncolumn+1],sPic,sAuth,sTitle,sText,chAllResult[i*ncolumn+7]);
-                websWrite(wp,sOutput,chAllResult[i*ncolumn],chAllResult[i*ncolumn+1],sPic,sTitle,sTitle,sText,chAllResult[i*ncolumn+6]);
+                websWrite(wp,sOutput,sPage,chAllResult[i*ncolumn+1],sPic,sAuth,sTitle,sText,sMode);
                 if((i==nrow)||(i==10)) break;
                 websWrite(wp,"%s",sOutputMiddle);
             }
@@ -1783,10 +1832,17 @@ void getList(Webs *wp)
                 
             sqlGetTable("tLst", lst,"lst_time",sTime,sizeof(sTime));
             sqlGetTable("tLst", lst,"pic_ft1",sMode,sizeof(sMode));
+            sqlGetTable("tLst", lst,"pic_ft2",sMode2,sizeof(sMode2));
             sqlGetTable("tPic", pic,"author",sAuth,sizeof(sAuth));
             sqlGetTable("tTxt", txt,"txt_title",sTitle,sizeof(sTitle));
             sqlGetTable("tTxt", txt,"txt_content",sText,sizeof(sText));
-            snprintf(sPage,sizeof(sPage),"%d",lst);
+            if(smatch(sMode2,"html"))
+            {
+                snprintf(sMode,sizeof(sMode),"%s",sMode2);
+                //printf("sMode2: %s\n", sMode);
+            }
+            //printf("sMode: %s\n", sMode);
+            snprintf(sPage,sizeof(sPage),"%04d",lst);
             snprintf(sPic,sizeof(sPic),"%04d",pic);
             //printf( "Index[%s][%s][%s][%s][%s][%s][%s]\n",sPage,sTime,sPic,sAuth,sTitle,sText,sMode);
             websWrite(wp,sOutput,sPage,sTime,sPic,sAuth,sTitle,sText,sMode);

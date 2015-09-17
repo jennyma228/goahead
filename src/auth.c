@@ -692,6 +692,32 @@ PUBLIC bool websVerifyPasswordFromFile(Webs *wp)
     return success;
 }
 
+PUBLIC bool websVerifyPasswordFromPost(char *username,char *password)
+{
+    char    passbuf[ME_GOAHEAD_LIMIT_PASSWORD * 3 + 3];
+    bool    success;char *md5pw;
+
+    struct WebsUser *user;
+    if ( (user = websLookupUser(username)) == 0) {
+        trace(5, "verifyUser: Unknown user \"%s\"", username);
+        return 0;
+    }
+    /*
+        Verify the password. If using Digest auth, we compare the digest of the password.
+        Otherwise we encode the plain-text password and compare that
+     */
+    fmt(passbuf, sizeof(passbuf), "%s:%s:%s", username, ME_GOAHEAD_REALM, password);
+    md5pw = websMD5(passbuf);
+    success = smatch(md5pw, user->password);
+    printf("[%s][%s][%s][%s]\n",username,password,md5pw, user->password);
+    if (success) {
+        trace(5, "User \"%s\" authenticated", username);
+    } else {
+        trace(5, "Password for user \"%s\" failed to authenticate", username);
+    }
+    return success;
+}
+
 
 #if ME_COMPILER_HAS_PAM
 /*
