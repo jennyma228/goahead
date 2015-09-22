@@ -584,6 +584,8 @@ PUBLIC int websJstGetContentIP(int jid, Webs *wp, int argc, char **argv)
      }else{
         websWrite(wp, "%s",contentip);
      }
+     //printf("ipaddr=%s\n",wp->ipaddr);
+     //printf("contentip=%s\n",contentip);
     
     return 0;
 }
@@ -1640,6 +1642,7 @@ void contentIp(Webs *wp)
     websWriteEndHeaders(wp);
     if( inet_aton(wp->input.servp, &adr_inet.sin_addr)){
         snprintf(contentip,sizeof(contentip),"%s",wp->input.servp);
+        logmsg(2, "ipaddr IP[%s]\n",wp->ipaddr);
         logmsg(2, "Content IP[%s]\n",contentip);
         websWrite(wp,"Content IP[%s]\n",contentip);
     }  else {
