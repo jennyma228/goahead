@@ -140,16 +140,16 @@ MAIN(goahead, int argc, char **argv, char **envp)
     websAddRoute("/", "file", 0);
 #endif
 #if ME_GOAHEAD_UPLOAD
-    websDefineAction("uploadFiles", uploadFiles);
-    websDefineAction("uploadPage", uploadPage);
-    websDefineAction("uploadTexts", uploadTexts);
-    websDefineAction("deletePage", deletePage);
-    websDefineAction("nextPage", nextPage);
-    websDefineAction("returnIndex", returnIndex);
-    websDefineAction("getComment", getComment);
-    websDefineAction("content", contentIp);
-    websDefineAction("deleteComment", deleteComment);
-    websDefineAction("getList", getList);
+    websDefineAction("uploadFiles", ExeUploadFiles);
+    websDefineAction("uploadPage", ExeUploadPage);
+    websDefineAction("uploadTexts", ExeUploadTexts);
+    websDefineAction("deletePage", ExeDeletePage);
+    websDefineAction("nextPage", ExeNextPage);
+    websDefineAction("returnIndex", ExeReturnHome);
+    websDefineAction("getComment", ExeGetComment);
+    websDefineAction("content", ExeUploaderIP);
+    websDefineAction("deleteComment", ExeDeleteComment);
+    websDefineAction("getList", ExeGetList);
 #endif
 #if USING_SQLITE
 // creat sqlite database

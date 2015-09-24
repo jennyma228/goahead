@@ -1675,16 +1675,16 @@ PUBLIC WebsHash websGetUpload(struct Webs *wp);
     @stability Evolving
  */
 PUBLIC WebsUpload *websLookupUpload(struct Webs *wp, char *key);
-PUBLIC void uploadFiles(struct Webs *wp);
-PUBLIC void uploadPage(struct Webs *wp);
-PUBLIC void uploadTexts(struct Webs *wp);
-PUBLIC void deletePage(struct Webs *wp);
-PUBLIC void nextPage(struct Webs *wp);
-PUBLIC void returnIndex(struct Webs *wp);
-PUBLIC void getComment(struct Webs *wp);
-PUBLIC void contentIp(struct Webs *wp);
-PUBLIC void deleteComment(struct Webs *wp);
-PUBLIC void getList(struct Webs *wp);
+PUBLIC void ExeUploadFiles(struct Webs *wp);
+PUBLIC void ExeUploadPage(struct Webs *wp);
+PUBLIC void ExeUploadTexts(struct Webs *wp);
+PUBLIC void ExeDeletePage(struct Webs *wp);
+PUBLIC void ExeNextPage(struct Webs *wp);
+PUBLIC void ExeReturnHome(struct Webs *wp);
+PUBLIC void ExeGetComment(struct Webs *wp);
+PUBLIC void ExeUploaderIP(struct Webs *wp);
+PUBLIC void ExeDeleteComment(struct Webs *wp);
+PUBLIC void ExeGetList(struct Webs *wp);
 #endif
 /********************************** Defines ***********************************/
 
@@ -3191,6 +3191,7 @@ PUBLIC int websJstGetPage(int jid, Webs *wp, int argc, char **argv);
 PUBLIC int websJstGetShow(int jid, Webs *wp, int argc, char **argv);
 PUBLIC int websJstGetLogin(int jid, Webs *wp, int argc, char **argv);
 PUBLIC int websJstGetContentIP(int jid, Webs *wp, int argc, char **argv);
+PUBLIC int websJstGetContent(int jid, Webs *wp, int argc, char **argv);
 #endif
 
 #if FUTURE
