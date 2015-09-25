@@ -3182,7 +3182,7 @@ PUBLIC int websJstOpen();
  */
 PUBLIC int websJstWrite(int jid, Webs *wp, int argc, char **argv);
 PUBLIC int websJstGetTitle(int jid, Webs *wp, int argc, char **argv);
-PUBLIC int websJstGetText(int jid, Webs *wp, int argc, char **argv);
+PUBLIC int websJstGetSummary(int jid, Webs *wp, int argc, char **argv);
 PUBLIC int websJstGetAuth(int jid, Webs *wp, int argc, char **argv);
 PUBLIC int websJstGetTime(int jid, Webs *wp, int argc, char **argv);
 PUBLIC int websJstGetPicture(int jid, Webs *wp, int argc, char **argv);

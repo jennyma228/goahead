@@ -10,8 +10,9 @@
 #include    "js.h"
 
 char contentip[32]="183.37.158.59";
-#define TITLE_MAX 30
-#define SUMMARY_MAX 50
+#define TITLE_MAX 40
+#define SUMMARY_MAX 100
+#define FONT_size 10
 struct sockaddr_in adr_inet; /* AF_INET */
 
 #if ME_GOAHEAD_JAVASCRIPT
@@ -196,7 +197,7 @@ PUBLIC int websJstOpen()
     websJstFunctions = hashCreate(WEBS_HASH_INIT * 2);
     websDefineJst("write", websJstWrite);
     websDefineJst("get_title", websJstGetTitle);
-    websDefineJst("get_text", websJstGetText);
+    websDefineJst("get_text", websJstGetSummary);
     websDefineJst("get_auth", websJstGetAuth);
     websDefineJst("get_time", websJstGetTime);
     websDefineJst("get_pic", websJstGetPicture);
@@ -253,7 +254,7 @@ PUBLIC int websJstWrite(int jid, Webs *wp, int argc, char **argv)
  */
 PUBLIC int websJstGetTitle(int jid, Webs *wp, int argc, char **argv)
 {
-   char strpage[40];
+   char strpage[TITLE_MAX];
    int pg=0,id=0,op=0;
    char sTitle[TITLE_MAX]="\0";
    
@@ -284,7 +285,7 @@ PUBLIC int websJstGetTitle(int jid, Webs *wp, int argc, char **argv)
 /*
     Javascript write command. This implemements <% get_text(1,1,1); %> command
  */
-PUBLIC int websJstGetText(int jid, Webs *wp, int argc, char **argv)
+PUBLIC int websJstGetSummary(int jid, Webs *wp, int argc, char **argv)
 {
     int pg=0,id=0,op=0;
     int txt_id=0;
@@ -706,36 +707,55 @@ static int _atoi(const char *s)
     return value;
 }
 
-void chkHalfChinese(char *src,char *dst,int len)
-{
-    int i = 0;
-    int cnt = 0;
-    int idx=len-4;
-    for(i=0;i<(len-4);i++)
-    {
-        dst[i] = src[i]&0xFF;
-        if(dst[i]>160)
-        {
-            cnt++;
-            idx=i;
-        }else if(dst[i]==0){
+void substr_UTF8(char *s_input, int width, char *s_output, int buffer_len) {
+                                             //
+    int x1 = 11, x2 = 16, x3 = 21, x4 = 21;  //
+    int charint;
+    int l = 0;
+    int w = 0;
+    int add_width = 0;
+    int add_byte = 0;
+    int i=0;
+    int cut=0;
+
+    while(s_input[l]) {
+
+        
+        charint = (unsigned char)s_input[l];  //
+        
+        if (charint <= 127) {  //
+            add_width = x1;
+            add_byte = 1;
+        } else if (charint >= 192 && charint <= 223) {  //
+            add_width = x2;
+            add_byte = 2;
+        } else if (charint >= 224 && charint <= 239) {  //
+            add_width = x3;
+            add_byte = 3;
+        } else if (charint >= 240 && charint <= 247) {  //
+            add_width = x4;
+            add_byte = 4;
+        }
+
+        if ((w + add_width) >= width || (l + add_byte) >= (buffer_len-4)) {
+            cut = 1;
             break;
         }
+        w += add_width;
+        l += add_byte;
     }
-    if(cnt%2)
-    {
-        dst[idx] ='.';
-        dst[idx+1] ='.';
-        dst[idx+2] ='.';
-        dst[idx+3] =0;
+    
+    //printf("w=%d,l=%d\n", w, l);
+
+    for (i = 0; i < l; i++) {
+        s_output[i] = s_input[i];
     }
-    else if(i==(len-4))
-    {
-        dst[i] ='.';
-        dst[i+1] ='.';
-        dst[i+2] ='.';
-        dst[i+3] =0;
+    if(cut){
+        s_output[i++] = '.';
+        s_output[i++] = '.';
+        s_output[i++] = '.';
     }
+    s_output[i] = 0;
 }
 
 static int websGetPage( Webs *wp)
@@ -1470,8 +1490,9 @@ void ExeUploadTexts(Webs *wp)
     //WebsKey         *s;
     int currentpage=0;
     int currenttxt=0;
-    char *mytitle;
-    char *mytext;
+    char mytitle[TITLE_MAX];
+    char mysummary[SUMMARY_MAX];
+    char *mycontent;
 
     char * pErrMsg = 0;
     int ret = 0;
@@ -1492,11 +1513,12 @@ void ExeUploadTexts(Webs *wp)
         currenttxt=sqlGetText(currentpage);
         printf("current[%d][%d]\n",currentpage,currenttxt);
               
-        mytitle=websGetVar(wp, "mytitle", "");
-        mytext=websGetVar(wp, "mytext", "");
+        substr_UTF8(websGetVar(wp, "mytitle", ""),TITLE_MAX*FONT_size,mytitle,sizeof(mytitle));
+        mycontent=websGetVar(wp, "mytext", "");
+        substr_UTF8(mycontent,SUMMARY_MAX*FONT_size,mysummary,sizeof(mysummary));
 
         if(scaselessmatch(mytitle,"comment")){
-            zSQL = sqlite3_mprintf(sInsert_txt,currentpage,wp->username,mytext);
+            zSQL = sqlite3_mprintf(sInsert_txt,currentpage,wp->username,mysummary);
             ret = sqlite3_exec( sqldb, zSQL, 0, 0, &pErrMsg);
             printf("%s\n",zSQL);
             sqlite3_free(zSQL);
@@ -1505,7 +1527,7 @@ void ExeUploadTexts(Webs *wp)
                   sqlite3_free(pErrMsg);
              }
          } else {
-            zSQL = sqlite3_mprintf(sUpdate_txt,mytitle,mytext,mytext,currenttxt);
+            zSQL = sqlite3_mprintf(sUpdate_txt,mytitle,mysummary,mycontent,currenttxt);
             ret = sqlite3_exec( sqldb, zSQL, 0, 0, &pErrMsg);
             printf("%s\n",zSQL);
             sqlite3_free(zSQL);
@@ -1519,7 +1541,7 @@ void ExeUploadTexts(Webs *wp)
     websWriteHeaders(wp, -1, 0);
     websWriteHeader(wp, "Content-Type", "text/html");
     websWriteEndHeaders(wp);
-    websWrite(wp, "{\"mytitle\":\"%s\",\"mytext\":\"%s\"}",mytitle,mytext);
+    websWrite(wp, "{\"mytitle\":\"%s\",\"mytext\":\"%s\"}",mytitle,mysummary);
     websDone(wp);
 }
 
@@ -1641,9 +1663,9 @@ if (scaselessmatch(wp->method, "POST")) {
       sqlite3_free(pErrMsg);
     } else {
       if(nrow==1){
-        printf( "Comment[%d][%s][%s][%s][%s][%d]\n",txt_id,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+5],pic_id);
+        printf( "Comment[%d][%s][%s][%s][%s][%d]\n",txt_id,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+6],pic_id);
         //sqlGetTable("tTxt", sqlGetText(currentpage),"author",sAuth,sizeof(sAuth));
-        websWrite(wp,sOutput,currentpage,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+5],pic_id);
+        websWrite(wp,sOutput,currentpage,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+6],pic_id);
       }
     }
     sqlite3_free_table(chAllResult);
