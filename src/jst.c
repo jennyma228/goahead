@@ -1180,7 +1180,7 @@ void ExeUploadFiles(Webs *wp)
       const char * sInsert_pic = "insert into tPic values('%d',(SELECT datetime('now', 'localtime')),\
 '%d', '%s');";
       const char * sInsert_txt = "insert into tTxt values('%d',(SELECT datetime('now', 'localtime')),\
-'%d', '%s','%s','%s');";
+'%d', '%s','%s','%s','%s');";
 
     assert(websValid(wp));
         
@@ -1265,7 +1265,7 @@ if (scaselessmatch(wp->method, "POST")) {
           printf("Insert tPic error: %s\n", pErrMsg);
           sqlite3_free(pErrMsg);
       }
-    zSQL = sqlite3_mprintf(sInsert_txt,nexttxt,nextpage,wp->username,mytitle,mytext);
+    zSQL = sqlite3_mprintf(sInsert_txt,nexttxt,nextpage,wp->username,mytitle,mytext,mytext);
     ret = sqlite3_exec( sqldb, zSQL, 0, 0, &pErrMsg);
     printf("%s\n",zSQL);
     sqlite3_free(zSQL);
