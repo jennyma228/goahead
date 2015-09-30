@@ -1636,9 +1636,10 @@ char *zSQL;
 int nrow = 0;
 int ncolumn = 0;
 char **chAllResult; //Array for Result
-
+char pagemode[20];
+ 
 const char * sSelect_txt = "SELECT *  FROM tTxt where id=%d;";
-char * sOutput =  "{\"id\":\"%d\",\"txt_time\":\"%s\",\"author\":\"%s\",\"txt_title\":\"%s\",\"txt_content\":\"%s\",\"picture\":\"./img_files/0%04d.jpg\"}";
+char * sOutput =  "{\"id\":\"%d\",\"txt_time\":\"%s\",\"author\":\"%s\",\"txt_title\":\"%s\",\"txt_content\":\"%s\",\"picture\":\"./img_files/0%04d.jpg\",\"pagemode\":\"%s\"}";
 
 assert(websValid(wp));
 currentpage=websGetQdata(wp,"mid");
@@ -1646,6 +1647,7 @@ next_last=websGetQdata(wp,"next_last");
 currentpage=sqlGetNextList(currentpage,next_last);
 pic_id=sqlGetPicture(currentpage);
 txt_id=sqlGetText(currentpage);
+sqlGetTable("tLst",currentpage,"pic_ft2",pagemode,sizeof(pagemode));
 
 if (scaselessmatch(wp->method, "POST")) {
     printf("nextPage:POST\n");
@@ -1663,9 +1665,15 @@ if (scaselessmatch(wp->method, "POST")) {
       sqlite3_free(pErrMsg);
     } else {
       if(nrow==1){
-        printf( "Comment[%d][%s][%s][%s][%s][%d]\n",txt_id,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+6],pic_id);
-        //sqlGetTable("tTxt", sqlGetText(currentpage),"author",sAuth,sizeof(sAuth));
-        websWrite(wp,sOutput,currentpage,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+6],pic_id);
+        if(scaselessmatch(pagemode,"html")){
+            printf( "Page[%d][%s][%s][%s][%s][%d][%s]\n",txt_id,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],"content",0,pagemode);
+            //sqlGetTable("tTxt", sqlGetText(currentpage),"author",sAuth,sizeof(sAuth));
+            websWrite(wp,sOutput,currentpage,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],"content",0,pagemode);
+        }else{
+            printf( "Page[%d][%s][%s][%s][%s][%d][%s]\n",txt_id,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+6],pic_id,pagemode);
+            //sqlGetTable("tTxt", sqlGetText(currentpage),"author",sAuth,sizeof(sAuth));
+            websWrite(wp,sOutput,currentpage,chAllResult[ncolumn+1],chAllResult[ncolumn+3],chAllResult[ncolumn+4],chAllResult[ncolumn+6],pic_id,pagemode);
+        }
       }
     }
     sqlite3_free_table(chAllResult);
