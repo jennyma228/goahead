@@ -1343,9 +1343,10 @@ if (scaselessmatch(wp->method, "POST")) {
 void ExeUploadPage(Webs *wp)
 {
     char            *remote_file;
-    char            *upfile;
+    //char            *upfile;
     char            *upfile_s;
     char            *uppage;
+    char            *updefault;
     //char uri[256];
     char document[128];
     int nextpage=0,nextpic=0,nexttxt=0;
@@ -1357,6 +1358,9 @@ void ExeUploadPage(Webs *wp)
     char *mycontent;
     char *myname;
     char *mypw;
+    char title[TITLE_MAX];
+    char summary[SUMMARY_MAX];
+    char *command;
 
     char * pErrMsg = 0;
     int ret = 0;
@@ -1402,36 +1406,65 @@ if (scaselessmatch(wp->method, "POST")) {
     item=_atoi(websGetVar(wp, "pagesubject", ""));
     logmsg(2,"item=%d\n",item);
 
-    upfile = sfmt("%s/img_files/0%04d.jpg", document,nextpic);// thumbnail
+    //upfile = sfmt("%s/img_files/0%04d.jpg", document,nextpic);// 
     upfile_s = sfmt("%s/img_files/%04d.jpg", document,nextpic);// thumbnail
-    uppage = sfmt("%s/img_files/%04d.html", document,nextpage);// thumbnail
+    uppage = sfmt("%s/img_files/%04d.html", document,nextpage);// 
+    updefault  = sfmt("%s/img_files/%d.jpg", document,channel);// thumbnail
     logmsg(2,"upfile_s=%s\n",upfile_s);
     remote_file = websGetVar(wp, "thumbnail", "");
     websDecodeUrl(remote_file, remote_file, strlen(remote_file));
     logmsg(2,"remote_file=%s\n",remote_file);
-    {   // Todo  image file type  and gif
-        char *command=sfmt("wget -O %s %s",upfile,remote_file);
+    if(scaselessmatch(remote_file,"default picture!")){
+         command=sfmt("cp -f  %s %s",updefault,upfile_s);
         logmsg(2,"%s\n",command);
         system(command);
         wfree(command);
-        command=sfmt("convert -scale %s %s %s",pic_ft1,upfile,upfile_s);
-        logmsg(2,"%s\n",command);
-        system(command);
-        wfree(command);
-        command=sfmt("rm %s",upfile);
-        logmsg(2,"%s\n",command);
-        system(command);
-        wfree(command);
+    }else{   // Todo  image file type  and gif
+        char *ext = strrchr(remote_file,'.');
+        if(scaselessmatch(ext,".jpg")||scaselessmatch(ext,".bmp")||scaselessmatch(ext,".png")){
+            command=sfmt("wget -O temp %s",remote_file);
+            logmsg(2,"%s\n",command);
+            system(command);
+            wfree(command);
+            command=sfmt("convert -scale %s temp %s",pic_ft1,upfile_s);
+            logmsg(2,"%s\n",command);
+            system(command);
+            wfree(command);
+            command=sfmt("rm %s","temp");
+            logmsg(2,"%s\n",command);
+            system(command);
+            wfree(command);
+        } else if(scaselessmatch(ext,".gif")){
+            command=sfmt("wget -O temp.gif %s",remote_file);
+            logmsg(2,"%s\n",command);
+            system(command);
+            wfree(command);
+            command=sfmt("convert -scale %s 'temp.gif[0]' %s",pic_ft1,upfile_s);
+            logmsg(2,"%s\n",command);
+            system(command);
+            wfree(command);
+            command=sfmt("rm %s","temp.gif");
+            logmsg(2,"%s\n",command);
+            system(command);
+            wfree(command);
+        } else {
+             command=sfmt("cp -f  %s %s",updefault,upfile_s);
+            logmsg(2,"%s\n",command);
+            system(command);
+            wfree(command);
+        }
     }
 
     mytitle=websGetVar(wp, "pagetitle", "");
-    logmsg(2,"pagetitle=%s\n",mytitle);
+    substr_UTF8(mytitle,TITLE_MAX*FONT_size,title,sizeof(title));
+    logmsg(2,"pagetitle=%s\n",title);
     mysummary=websGetVar(wp, "summary", "");
     websDecodeUrl(mysummary, mysummary, strlen(mysummary));
-    logmsg(2,"mysummary=%s\n",mysummary);
+    substr_UTF8(mysummary,SUMMARY_MAX*FONT_size,summary,sizeof(summary));
+    logmsg(2,"summary=%s\n",summary);
     mycontent=websGetVar(wp, "content", "");
     websDecodeUrl(mycontent, mycontent, strlen(mycontent));
-    logmsg(2,"mycontent=%s\n",mycontent);
+    //logmsg(2,"mycontent=%s\n",mycontent);
     #if 0
     {
          int fd;
@@ -1471,7 +1504,7 @@ if (scaselessmatch(wp->method, "POST")) {
               printf("Insert tPic error: %s\n", pErrMsg);
               sqlite3_free(pErrMsg);
           }
-        zSQL = sqlite3_mprintf(sInsert_txt,nexttxt,nextpage,myname,mytitle,mysummary,mycontent);
+        zSQL = sqlite3_mprintf(sInsert_txt,nexttxt,nextpage,myname,title,summary,mycontent);
         ret = sqlite3_exec( sqldb, zSQL, 0, 0, &pErrMsg);
         printf("%s\n",zSQL);
         sqlite3_free(zSQL);
@@ -1516,6 +1549,8 @@ void ExeUploadTexts(Webs *wp)
         substr_UTF8(websGetVar(wp, "mytitle", ""),TITLE_MAX*FONT_size,mytitle,sizeof(mytitle));
         mycontent=websGetVar(wp, "mytext", "");
         substr_UTF8(mycontent,SUMMARY_MAX*FONT_size,mysummary,sizeof(mysummary));
+        //printf("mycontent=%s\n",mycontent);
+        printf("mysummary=%s\n",mysummary);
 
         if(scaselessmatch(mytitle,"comment")){
             zSQL = sqlite3_mprintf(sInsert_txt,currentpage,wp->username,mysummary);
