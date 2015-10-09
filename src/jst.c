@@ -758,6 +758,135 @@ void substr_UTF8(char *s_input, int width, char *s_output, int buffer_len) {
     s_output[i] = 0;
 }
 
+int ParserURL(char *host,char *url,char **path)
+{
+    char *parseptr1;
+    char *parseptr2;
+    char * mypath;
+    int len;
+    int i;
+    bool flag=1;
+    printf("host=%s!\n",host);
+    *path=url;
+    parseptr2 = url;
+    parseptr1 = strchr(parseptr2, ':');
+    if ( NULL == parseptr1 ) {
+        printf("URL error!\n");
+        return 0;
+    }
+    len = parseptr1 - parseptr2;
+    for ( i = 0; i < len; i++ ) {
+        if ( !isalpha(parseptr2[i]) ) {
+            printf("URL error!\n");
+            return 0;
+        }
+    }
+    printf("protocol: ");
+    for(i=0;i<len;i++){
+        printf("%c",parseptr2[i]);
+    }
+    printf("\n");//protocol
+    parseptr1++;
+    parseptr2 = parseptr1;
+    for ( i = 0; i < 2; i++ ) {
+        if ( '/' != *parseptr2 ) {
+            printf("URL error!\n");
+            return 0;
+        }
+        parseptr2++;
+    }
+    parseptr1 = strchr(parseptr2, ':');
+    if ( NULL == parseptr1 )//has port?
+    {
+        parseptr1 = strchr(parseptr2, '/');
+        if ( NULL == parseptr1 ) {
+            printf("URL error!\n");
+            return 0;
+        }
+        len = parseptr1 - parseptr2;
+        printf("host: ");
+        for(i=0;i<len;i++){
+           printf("%c",parseptr2[i]);
+        }
+        printf("\n");//host
+    }
+    else{
+        len = parseptr1 - parseptr2;
+        printf("host: ");
+        for(i=0;i<len;i++){
+            printf("%c",parseptr2[i]);
+            if(host[i]!=parseptr2[i]){
+                flag = 0;
+            }
+        }
+        printf("\n");
+        parseptr1++;
+        parseptr2 = parseptr1;
+        parseptr1 = strchr(parseptr2, '/');
+        if ( NULL == parseptr1 ) {
+            printf("URL error!\n");
+            return 0;
+        }
+        len = parseptr1 - parseptr2;
+        printf("port: ");
+        for(i=0;i<len;i++){
+            printf("%d",(parseptr2[i]-48));
+        }
+        printf("\n");//port
+    }
+    parseptr1++;
+    parseptr2 = parseptr1;
+    while ( '\0' != *parseptr1 && '?' != *parseptr1  && '#' != *parseptr1 ) {
+        parseptr1++;
+    }
+    len = parseptr1 - parseptr2;
+    printf("path: ");
+    for(i=0;i<len;i++){
+        printf("%c",parseptr2[i]);
+    }
+    printf("\n");//path
+    mypath = parseptr2;
+    parseptr2=parseptr1;
+    if ( '?' == *parseptr1 ) {
+        parseptr2++;
+        parseptr1 = parseptr2;
+        while ( '\0' != *parseptr1 && '#' != *parseptr1 ) {
+            parseptr1++;
+        }
+        len = parseptr1 - parseptr2;
+        printf("query: ");
+        for(i=0;i<len;i++){
+            printf("%c",parseptr2[i]);//query
+        }
+        printf("\n");
+    }
+    parseptr2=parseptr1;
+    if ( '#' == *parseptr1 ) {
+        parseptr2++;
+        parseptr1 = parseptr2;
+        while ( '\0' != *parseptr1 ) {
+            parseptr1++;
+        }
+        len = parseptr1 - parseptr2;
+        printf("fragment: ");
+        for(i=0;i<len;i++){
+            printf("%c",parseptr2[i]);
+        }
+        printf("\n");//fragment
+    }
+    if(flag){
+        if(scaselessmatch(host,"localhost")){
+            *path = sfmt("http://localhost:5000/%s", mypath);// 
+        }else{
+            *path = sfmt("http://%s:5000/%s", contentip,mypath);// 
+        }
+        printf("path1=%s\n",*path);
+        return 1;
+    }
+    printf("path=%s\n",*path);
+    return 0;
+}
+
 static int websGetPage( Webs *wp)
 {
     char strpage[16];
@@ -1343,6 +1472,7 @@ if (scaselessmatch(wp->method, "POST")) {
 void ExeUploadPage(Webs *wp)
 {
     char            *remote_file;
+    char            *remote_path;
     //char            *upfile;
     char            *upfile_s;
     char            *uppage;
@@ -1421,8 +1551,10 @@ if (scaselessmatch(wp->method, "POST")) {
         wfree(command);
     }else{   // Todo  image file type  and gif
         char *ext = strrchr(remote_file,'.');
+        ParserURL(wp->host,remote_file,&remote_path);
         if(scaselessmatch(ext,".jpg")||scaselessmatch(ext,".bmp")||scaselessmatch(ext,".png")){
-            command=sfmt("wget -O temp %s",remote_file);
+            command=sfmt("wget -O temp %s",remote_path);
+            wfree(remote_path);
             logmsg(2,"%s\n",command);
             system(command);
             wfree(command);
@@ -1435,7 +1567,8 @@ if (scaselessmatch(wp->method, "POST")) {
             system(command);
             wfree(command);
         } else if(scaselessmatch(ext,".gif")){
-            command=sfmt("wget -O temp.gif %s",remote_file);
+            command=sfmt("wget -O temp.gif %s",remote_path);
+            wfree(remote_path);
             logmsg(2,"%s\n",command);
             system(command);
             wfree(command);
