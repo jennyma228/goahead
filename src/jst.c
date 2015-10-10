@@ -1551,10 +1551,10 @@ if (scaselessmatch(wp->method, "POST")) {
         wfree(command);
     }else{   // Todo  image file type  and gif
         char *ext = strrchr(remote_file,'.');
-        ParserURL(wp->host,remote_file,&remote_path);
+        int flag=ParserURL(wp->host,remote_file,&remote_path);
         if(scaselessmatch(ext,".jpg")||scaselessmatch(ext,".bmp")||scaselessmatch(ext,".png")){
             command=sfmt("wget -O temp %s",remote_path);
-            wfree(remote_path);
+            if(flag) {wfree(remote_path);}
             logmsg(2,"%s\n",command);
             system(command);
             wfree(command);
@@ -1568,7 +1568,7 @@ if (scaselessmatch(wp->method, "POST")) {
             wfree(command);
         } else if(scaselessmatch(ext,".gif")){
             command=sfmt("wget -O temp.gif %s",remote_path);
-            wfree(remote_path);
+            if(flag) {wfree(remote_path);}
             logmsg(2,"%s\n",command);
             system(command);
             wfree(command);
