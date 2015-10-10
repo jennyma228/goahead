@@ -1640,17 +1640,18 @@ if (scaselessmatch(wp->method, "POST")) {
         zSQL = sqlite3_mprintf(sInsert_txt,nexttxt,nextpage,myname,title,summary,mycontent);
         ret = sqlite3_exec( sqldb, zSQL, 0, 0, &pErrMsg);
         printf("%s\n",zSQL);
-        printf("before!\n");
         sqlite3_free(zSQL);
-        printf("after!\n");
         if(ret != SQLITE_OK){
               printf("Insert tTxt error: %s\n", pErrMsg);
               sqlite3_free(pErrMsg);
           }
         }
     }
+    printf("before!\n");
     websWrite(wp, "{\"status\":\"ok\",\"ErrorCode\":\"1\"}");
+    printf("after!\n");
     websDone(wp);
+    printf("after2!\n");
 }
 
 void ExeUploadTexts(Webs *wp)
