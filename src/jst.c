@@ -1554,7 +1554,7 @@ if (scaselessmatch(wp->method, "POST")) {
         int flag=ParserURL(wp->host,remote_file,&remote_path);
         if(scaselessmatch(ext,".jpg")||scaselessmatch(ext,".bmp")||scaselessmatch(ext,".png")){
             command=sfmt("wget -O temp %s",remote_path);
-            if(flag) {wfree(remote_path);}
+            if(flag) {wfree(remote_path);}//avoid to double free
             logmsg(2,"%s\n",command);
             system(command);
             wfree(command);
@@ -1568,7 +1568,7 @@ if (scaselessmatch(wp->method, "POST")) {
             wfree(command);
         } else if(scaselessmatch(ext,".gif")){
             command=sfmt("wget -O temp.gif %s",remote_path);
-            if(flag) {wfree(remote_path);}
+            if(flag) {wfree(remote_path);}//avoid to double free
             logmsg(2,"%s\n",command);
             system(command);
             wfree(command);
@@ -1647,11 +1647,8 @@ if (scaselessmatch(wp->method, "POST")) {
           }
         }
     }
-    printf("before!\n");
     websWrite(wp, "{\"status\":\"ok\",\"ErrorCode\":\"1\"}");
-    printf("after!\n");
     websDone(wp);
-    printf("after2!\n");
 }
 
 void ExeUploadTexts(Webs *wp)
