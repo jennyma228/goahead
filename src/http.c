@@ -1070,6 +1070,9 @@ static void parseHeaders(Webs *wp)
             wp->authDetails = sclone(tok);
             slower(wp->authType);
 
+        } else if (scaselesscmp(key, "content-range") == 0) {
+            wp->contentRange = sclone(value);
+            printf("contentRange=%s\n",wp->contentRange);
         } else if (strcmp(key, "connection") == 0) {
             slower(value);
             if (strcmp(value, "keep-alive") == 0) {
@@ -1895,6 +1898,7 @@ PUBLIC void websWriteHeaders(Webs *wp, ssize length, char *location)
         if (wp->txLen < 0) {
             websWriteHeader(wp, "Transfer-Encoding", "chunked");
         }
+        websWriteHeader(wp, "Accept-Ranges ", "bytes");
         if (wp->flags & WEBS_KEEP_ALIVE) {
             websWriteHeader(wp, "Connection", "keep-alive");
         } else {

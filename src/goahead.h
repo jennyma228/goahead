@@ -1787,6 +1787,7 @@ typedef struct Webs {
     char            *authResponse;      /**< Outgoing auth header */
     char            *authType;          /**< Authorization type (Basic/DAA) */
     char            *contentType;       /**< Body content type */
+    char            *contentRange;       /**< Request content range */
     char            *cookie;            /**< Request cookie string */
     char            *decodedQuery;      /**< Decoded request query */
     char            *digest;            /**< Password digest */
