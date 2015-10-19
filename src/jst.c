@@ -25,7 +25,6 @@ static WebsHash websJstFunctions = -1;  /* Symbol table of functions */
 static char *strtokcmp(char *s1, char *s2);
 static char *skipWhite(char *s);
 static int strgetname(const char *s1, char *s2, int size);
-static int _atoi(const char *s);
 static int websGetPage( Webs *wp);
 static int websGetQdata(Webs *wp, char *option);
 #if USING_SQLITE
@@ -695,7 +694,7 @@ static int strgetname(const char *s1, char *s2, int size)
    return -1;
 }
 
-static int _atoi(const char *s)
+PUBLIC int _atoi(const char *s)
 {
     int value = 0;
     while(s && *s>='0' && *s<='9')

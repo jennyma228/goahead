@@ -778,6 +778,7 @@ typedef struct WebsKey {
  */
 typedef int WebsHash;                       /* Returned by symCreate */
 
+PUBLIC int _atoi(const char *s);
 /**
     Create a hash table
     @param size Minimum size of the hash index
@@ -1809,6 +1810,9 @@ typedef struct Webs {
     char            *userAgent;         /**< User agent (browser) */
     char            *username;          /**< Authorization username */
 
+    int             range_totle;/**< Request content range point*/
+    int             range_begin;/**< Request content range start*/
+    int             range_length;/**< Request content range Lengh*/
     int             sid;                /**< Socket id (handler) */
     int             listenSid;          /**< Listen Socket id */
     int             port;               /**< Request port number */

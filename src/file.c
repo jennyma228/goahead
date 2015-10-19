@@ -80,6 +80,7 @@ static bool fileHandler(Webs *wp)
            wfree(redirect);
            return 1;
         }
+       //printf("websPageOpen\n");
         if (websPageOpen(wp, O_RDONLY | O_BINARY, 0666) < 0) {
 #if ME_DEBUG
             if (wp->referrer) {
@@ -94,12 +95,31 @@ static bool fileHandler(Webs *wp)
             return 1;
         }
         code = 200;
+        // jamesvan
+        if(wp->range_length<0){
+            if(wp->range_begin >0){
+                wp->range_length=info.size - wp->range_begin;
+            }else{
+                wp->range_length=info.size;
+            }
+        }
+        if(wp->range_length<info.size){
+            code = 206;
+        }
         if (wp->since && info.mtime <= wp->since) {
             code = 304;
             info.size = 0;
         }
+        //printf("begin[%d],len=[%d],all[%d]\n",wp->range_begin,wp->range_length,(int)info.size);
         websSetStatus(wp, code);
         websWriteHeaders(wp, info.size, 0);
+        if(code == 206) {
+            char temp[32]="bytes=0-";
+            if(wp->range_begin>0)
+                sprintf(temp,"%s",wp->contentRange);
+            //printf("%s\n",temp);
+            websWriteHeader(wp, "Content-Range", "bytes %s/%d", &temp[6],info.size);
+        }
         if ((date = websGetDateString(&info)) != NULL) {
             websWriteHeader(wp, "Last-Modified", "%s", date);
             wfree(date);
@@ -113,7 +133,10 @@ static bool fileHandler(Webs *wp)
             websDone(wp);
             return 1;
         }
-        if (info.size > 0) {
+        if ((info.size > 0)&&(wp->range_length>0)) {
+            wp->range_totle=0;
+            if(wp->range_begin>0)
+                websPageSeek(wp, wp->range_begin, SEEK_SET);
             websSetBackgroundWriter(wp, fileWriteEvent);
         } else {
             websDone(wp);
@@ -133,13 +156,20 @@ static void fileWriteEvent(Webs *wp)
     ssize   len, wrote;
 
     assert(wp);
-    assert(websValid(wp));
+    assert(websValid(wp));//jamesvan
 
+    if(wp->range_totle >= wp->range_length){
+        //printf("totle_end1=%d\n",(int)wp->range_totle);
+        websDone(wp);
+    }
+        
     if ((buf = walloc(ME_GOAHEAD_LIMIT_BUFFER)) == NULL) {
         websError(wp, HTTP_CODE_INTERNAL_SERVER_ERROR, "Cannot get memory");
         return;
     }
     while ((len = websPageReadData(wp, buf, ME_GOAHEAD_LIMIT_BUFFER)) > 0) {
+        if(len>(wp->range_length-wp->range_totle))
+            len=wp->range_length-wp->range_totle;
         if ((wrote = websWriteSocket(wp, buf, len)) < 0) {
             /* May be an error or just socket full (EAGAIN) */
             websPageSeek(wp, -len, SEEK_CUR);
@@ -147,11 +177,16 @@ static void fileWriteEvent(Webs *wp)
         }
         if (wrote != len) {
             websPageSeek(wp, - (len - wrote), SEEK_CUR);
+            wp->range_totle+=wrote;
             break;
         }
+        wp->range_totle+=wrote;
+        if(wp->range_totle >= wp->range_length)
+            break;
     }
     wfree(buf);
-    if (len <= 0) {
+    if ((len <= 0)||(wp->range_totle >= wp->range_length)) {
+        //printf("totle_end=%d\n",(int)wp->range_totle);
         websDone(wp);
     }
 }

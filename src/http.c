@@ -373,6 +373,8 @@ static void initWebs(Webs *wp, int flags, int reuse)
     wp->sid = sid;
     wp->timeout = timeout;
     wp->docfd = -1;
+    wp->range_begin = -1;
+    wp->range_length = -1;
     wp->txLen = -1;
     wp->rxLen = -1;
     wp->code = HTTP_CODE_OK;
@@ -455,6 +457,7 @@ static void termWebs(Webs *wp, int reuse)
     wfree(wp->authResponse);
     wfree(wp->authType);
     wfree(wp->contentType);
+    wfree(wp->contentRange);
     wfree(wp->cookie);
     wfree(wp->decodedQuery);
     wfree(wp->digest);
@@ -1063,16 +1066,50 @@ static void parseHeaders(Webs *wp)
          */
         if (strcmp(key, "user-agent") == 0) {
             wp->userAgent = sclone(value);
-
+            //printf("user-agent=%s\n",wp->userAgent);
         } else if (scaselesscmp(key, "authorization") == 0) {
             wp->authType = sclone(value);
             ssplit(wp->authType, " \t", &tok);
             wp->authDetails = sclone(tok);
             slower(wp->authType);
 
-        } else if (scaselesscmp(key, "content-range") == 0) {
-            wp->contentRange = sclone(value);
-            printf("contentRange=%s\n",wp->contentRange);
+        } else if( (scaselesscmp(key, "content-range") == 0)|| (scaselesscmp(key, "range") == 0)) {
+            int end;
+            wp->contentRange = sclone(value);//jamesvan
+            //printf("contentRange=%s\n",wp->contentRange);
+            {
+                //extern int _atoi(const char *s);
+                char str_begin[16]="";
+                char str_end[16]="";
+                char *p;
+                int i;
+                p=wp->contentRange;
+                while(*p++){
+                    if(*p=='='){
+                        i=0;
+                        while(*(++p)){
+                            if(*p=='-'){
+                                str_begin[i]='\0';
+                                break;
+                            }
+                            str_begin[i++]=*p;
+                        }
+                        i=0;
+                        while(*(++p)){
+                            if(*p=='\0'){
+                                str_end[i]='\0';
+                                break;
+                            }
+                            str_end[i++]=*p;
+                        }
+                    }
+                }
+                wp->range_begin=_atoi(str_begin);
+                end=_atoi(str_end);
+                if(end){
+                    wp->range_length=end-wp->range_begin+1;
+                }
+            }
         } else if (strcmp(key, "connection") == 0) {
             slower(value);
             if (strcmp(value, "keep-alive") == 0) {
@@ -1898,7 +1935,7 @@ PUBLIC void websWriteHeaders(Webs *wp, ssize length, char *location)
         if (wp->txLen < 0) {
             websWriteHeader(wp, "Transfer-Encoding", "chunked");
         }
-        websWriteHeader(wp, "Accept-Ranges ", "bytes");
+        websWriteHeader(wp, "Accept-Ranges", "bytes");//jamesvan
         if (wp->flags & WEBS_KEEP_ALIVE) {
             websWriteHeader(wp, "Connection", "keep-alive");
         } else {
@@ -3452,7 +3489,6 @@ PUBLIC void websPageSeek(Webs *wp, Offset offset, int origin)
 
     websSeekFile(wp->docfd, offset, origin);
 }
-
 
 PUBLIC void websSetCookie(Webs *wp, char *name, char *value, char *path, char *cookieDomain, WebsTime lifespan, int flags)
 {
