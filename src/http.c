@@ -1076,7 +1076,7 @@ static void parseHeaders(Webs *wp)
         } else if( (scaselesscmp(key, "content-range") == 0)|| (scaselesscmp(key, "range") == 0)) {
             int end;
             wp->contentRange = sclone(value);//jamesvan
-            //printf("contentRange=%s\n",wp->contentRange);
+            printf("contentRange=%s\n",wp->contentRange);
             {
                 //extern int _atoi(const char *s);
                 char str_begin[16]="";

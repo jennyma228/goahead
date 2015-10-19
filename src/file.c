@@ -110,12 +110,12 @@ static bool fileHandler(Webs *wp)
             code = 304;
             info.size = 0;
         }
-        //printf("begin[%d],len=[%d],all[%d]\n",wp->range_begin,wp->range_length,(int)info.size);
+        printf("begin[%d],len=[%d],all[%d]\n",wp->range_begin,wp->range_length,(int)info.size);
         websSetStatus(wp, code);
-        websWriteHeaders(wp, info.size, 0);
+        websWriteHeaders(wp, wp->range_length, 0);
         if(code == 206) {
             char temp[32]="bytes=0-";
-            if(wp->range_begin>0)
+            if(wp->contentRange!=NULL)
                 sprintf(temp,"%s",wp->contentRange);
             //printf("%s\n",temp);
             websWriteHeader(wp, "Content-Range", "bytes %s/%d", &temp[6],info.size);
@@ -159,7 +159,7 @@ static void fileWriteEvent(Webs *wp)
     assert(websValid(wp));//jamesvan
 
     if(wp->range_totle >= wp->range_length){
-        //printf("totle_end1=%d\n",(int)wp->range_totle);
+        printf("totle_end1=%d\n",(int)wp->range_totle);
         websDone(wp);
     }
         
@@ -186,7 +186,7 @@ static void fileWriteEvent(Webs *wp)
     }
     wfree(buf);
     if ((len <= 0)||(wp->range_totle >= wp->range_length)) {
-        //printf("totle_end=%d\n",(int)wp->range_totle);
+        printf("totle=%d\n",(int)wp->range_totle);
         websDone(wp);
     }
 }
