@@ -1756,7 +1756,7 @@ if (scaselessmatch(wp->method, "POST")) {
     }
 
     p=websGetVar(wp, "pagetitle", "");
-    size=strlen(p);
+    size=strlen(p)+1;
     mytitle=walloc(size);
     decodeURIComponent(mytitle,size,p);
     substr_UTF8(mytitle,TITLE_MAX*FONT_size,title,sizeof(title));
@@ -1764,7 +1764,7 @@ if (scaselessmatch(wp->method, "POST")) {
     logmsg(2,"pagetitle=%s\n",title);
 
     p=websGetVar(wp, "summary", "");
-    size=strlen(p);
+    size=strlen(p)+1;
     mysummary=walloc(size);
     decodeURIComponent(mysummary,size,p);
     substr_UTF8(mysummary,SUMMARY_MAX*FONT_size,summary,sizeof(summary));
@@ -1772,7 +1772,7 @@ if (scaselessmatch(wp->method, "POST")) {
     logmsg(2,"summary=%s\n",summary);
     
     p=websGetVar(wp, "content", "");
-    size=strlen(p);
+    size=strlen(p)+1;
     mycontent=walloc(size);
     decodeURIComponent(mycontent,size,p);
     //logmsg(2,"mycontent=%s\n",mycontent);
@@ -1861,7 +1861,7 @@ void ExeUploadTexts(Webs *wp)
         {
             char *p1=websGetVar(wp, "mytitle", "");
             printf("mytitle1=%s\n",p1);
-            int size=strlen(p1);
+            int size=strlen(p1)+1;
             char *p2=walloc(size);
             decodeURIComponent(p2,size,p1);
             printf("mytitle2=%s\n",p2);
@@ -1873,7 +1873,7 @@ void ExeUploadTexts(Webs *wp)
         {
             char *p1=websGetVar(wp, "mytext", "");
             printf("mysummary1=%s\n",p1);
-            int size=strlen(p1);
+            int size=strlen(p1)+1;
             mycontent=walloc(size);
             decodeURIComponent(mycontent,size,p1);
             printf("mysummary2=%s\n",mycontent);
