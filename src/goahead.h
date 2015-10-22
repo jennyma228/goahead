@@ -1582,6 +1582,31 @@ PUBLIC char *strim(char *str, char *set, int where);
  */
 PUBLIC char *supper(char *str);
 
+/*
+DecimalDigit
+    0 1 2 3 4 5 6 7 8 9
+
+uriAlpha
+    a b c d e f g h i j k l m n o p q r s t u v w x y z
+    A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+
+uriMark
+    - _ . ! ~ * ' ( )
+
+uriReserved
+    ; / ? : @ & = + $ ,
+
+uriUnescaped
+    DecimalDigit
+    uriAlpha
+    uriMark
+*/
+
+PUBLIC char *encodeURI(char *pszRet, int size, const char *uriString);
+PUBLIC char *encodeURIComponent(char *pszRet, int size, const char *uriComponent);
+PUBLIC char *decodeURI(char *pszRet, int size, const char *pszURI);
+PUBLIC char *decodeURIComponent(char *pszRet, int size, const char *pszURI);
+
 /**
     Callback function for events
     @param data Opaque data argument

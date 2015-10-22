@@ -757,6 +757,172 @@ void substr_UTF8(char *s_input, int width, char *s_output, int buffer_len) {
     s_output[i] = 0;
 }
 
+static char IsCharAlphaNumericA(char ch)
+{
+    if(((ch>'0')&&(ch<'9'))
+        ||((ch>'a')&&(ch<'z'))
+        ||((ch>'A')&&(ch<'Z')))
+        return 1;
+    return 0;
+}
+
+static char _hexToChar(char hex)
+{
+    return (hex < 10) ? (hex + '0') : (hex - 10 + 'A');
+}
+
+static char _charToHex(char ch)
+{
+    switch (ch) {
+    case '0'...'9':
+        return ch - '0';
+    case 'a'...'z':
+        return ch - 'a' + 10;
+    case 'A'...'Z':
+        return ch - 'A' + 10;
+    default:
+        return 0;
+    }
+}
+
+static char  _charInList(const char *chList, char ch)
+{
+    if (ch < 0x80) {
+        while (*chList != 0) {
+            if (*chList++ == ch) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+static void _encodeURI(
+    char *pszRet,
+    int size,
+    const char *pszURI,
+    const char *chList
+)
+{
+    int i=0;
+    if (pszRet != NULL && pszURI != NULL) {
+        while (*pszURI != 0) {
+            char ch = *pszURI++;
+            if (IsCharAlphaNumericA(ch) || _charInList(chList, ch)) {
+                if(i<(size-1)) {
+                    pszRet[i++] = ch;
+                } else {
+                    break;
+                }
+            } else {
+                if(i<(size-3)) {
+                    pszRet[i++] = '%';
+                    pszRet[i++] = _hexToChar((ch >> 4)& 0x0F);
+                    pszRet[i++] = _hexToChar(ch & 0x0F);
+                }else{
+                    break;
+                }
+            }
+        }
+        pszRet[i]=0;
+    }
+}
+
+static void _decodeURI(
+    char *pszRet,
+    int size,
+    const char *pszURI,
+    const char *chList
+)
+{
+    int i=0;
+    if (pszRet != NULL && pszURI != NULL) {
+        while (*pszURI != 0) {
+            char ch = *pszURI++;
+            if (ch == '%') {
+                char _c1 = *pszURI++;
+                char _c2 = *pszURI++;
+                char _h1 = _charToHex(_c1);
+                char _h2 = _charToHex(_c2);
+                char _ch = (((_h1 << 4) & 0xF0) | (_h2 & 0x0F));
+                if (_charInList(chList, _ch)) {
+                    if(i<(size-3)) {
+                        pszRet[i++] = ch;
+                        pszRet[i++] = _c1;
+                        pszRet[i++] = _c2;
+                    }else{
+                        break;
+                    }
+                } else {
+                    if(i<(size-1)) {
+                        pszRet[i++] = _ch;
+                    }else{
+                        break;
+                    }
+                }
+            } else {
+                if(i<(size-1)) {
+                    pszRet[i++] = ch;
+                }else{
+                    break;
+                }
+            }
+        }
+        pszRet[i] = 0;
+    }
+}
+
+PUBLIC char *encodeURI(
+    char *pszRet,
+    int size,
+    const char *uriString
+)
+{
+    // Let unescapedURISet be a String containing one instance of each code unit
+    // valid in uriReserved and uriUnescaped plus "#".
+    const char unescapedURISet[] = "-_.!~*'();/?:@&=+$,#";
+    _encodeURI(pszRet, size, uriString, unescapedURISet);
+    return pszRet;
+}
+
+PUBLIC char *encodeURIComponent(
+    char *pszRet,
+    int size,
+    const char *uriComponent
+)
+{
+    // Let unescapedURIComponentSet be a String containing one instance of each
+    // code unit valid in uriUnescaped.
+    const char unescapedURIComponentSet[] = "-_.!~*'()";
+    _encodeURI(pszRet, size, uriComponent, unescapedURIComponentSet);
+    return pszRet;
+}
+
+PUBLIC char *decodeURI(
+    char *pszRet,
+    int size,
+    const char *pszURI
+)
+{
+    // Let reservedURISet be a String containing one instance of each code unit
+    // valid in uriReserved plus "#".
+    const char reservedURISet[] = ";/?:@&=+$,#";
+    _decodeURI(pszRet, size, pszURI, reservedURISet);
+    return pszRet;
+}
+
+PUBLIC char *decodeURIComponent(
+    char *pszRet,
+    int size,
+    const char *pszURI
+)
+{
+    // Let reservedURIComponentSet be the empty String.
+    const char reservedURIComponentSet[] = { 0 };
+    _decodeURI(pszRet, size, pszURI, reservedURIComponentSet);
+    return pszRet;
+}
+
 int ParserURL(char *host,char *url,char **path)
 {
     char *parseptr1;
@@ -1490,6 +1656,8 @@ void ExeUploadPage(Webs *wp)
     char title[TITLE_MAX];
     char summary[SUMMARY_MAX];
     char *command;
+    char *p;
+    int size;
 
     char * pErrMsg = 0;
     int ret = 0;
@@ -1587,15 +1755,26 @@ if (scaselessmatch(wp->method, "POST")) {
         }
     }
 
-    mytitle=websGetVar(wp, "pagetitle", "");
+    p=websGetVar(wp, "pagetitle", "");
+    size=strlen(p);
+    mytitle=walloc(size);
+    decodeURIComponent(mytitle,size,p);
     substr_UTF8(mytitle,TITLE_MAX*FONT_size,title,sizeof(title));
+    wfree(mytitle);
     logmsg(2,"pagetitle=%s\n",title);
-    mysummary=websGetVar(wp, "summary", "");
-    websDecodeUrl(mysummary, mysummary, strlen(mysummary));
+
+    p=websGetVar(wp, "summary", "");
+    size=strlen(p);
+    mysummary=walloc(size);
+    decodeURIComponent(mysummary,size,p);
     substr_UTF8(mysummary,SUMMARY_MAX*FONT_size,summary,sizeof(summary));
+    wfree(mysummary);
     logmsg(2,"summary=%s\n",summary);
-    mycontent=websGetVar(wp, "content", "");
-    websDecodeUrl(mycontent, mycontent, strlen(mycontent));
+    
+    p=websGetVar(wp, "content", "");
+    size=strlen(p);
+    mycontent=walloc(size);
+    decodeURIComponent(mycontent,size,p);
     //logmsg(2,"mycontent=%s\n",mycontent);
     #if 0
     {
@@ -1646,7 +1825,8 @@ if (scaselessmatch(wp->method, "POST")) {
           }
         }
     }
-    websWrite(wp, "{\"status\":\"ok\",\"ErrorCode\":\"1\"}");
+   wfree(mycontent);
+   websWrite(wp, "{\"status\":\"ok\",\"ErrorCode\":\"1\"}");
     websDone(wp);
 }
 
@@ -1677,11 +1857,28 @@ void ExeUploadTexts(Webs *wp)
         currentpage=websGetQdata(wp,"mid");
         currenttxt=sqlGetText(currentpage);
         printf("current[%d][%d]\n",currentpage,currenttxt);
-              
-        substr_UTF8(websGetVar(wp, "mytitle", ""),TITLE_MAX*FONT_size,mytitle,sizeof(mytitle));
-        mycontent=websGetVar(wp, "mytext", "");
-        substr_UTF8(mycontent,SUMMARY_MAX*FONT_size,mysummary,sizeof(mysummary));
-        //printf("mycontent=%s\n",mycontent);
+
+        {
+            char *p1=websGetVar(wp, "mytitle", "");
+            printf("mytitle1=%s\n",p1);
+            int size=strlen(p1);
+            char *p2=walloc(size);
+            decodeURIComponent(p2,size,p1);
+            printf("mytitle2=%s\n",p2);
+            substr_UTF8(p2,TITLE_MAX*FONT_size,mytitle,sizeof(mytitle));
+            wfree(p2);
+        }
+        printf("mytitle=%s\n",mytitle);
+        
+        {
+            char *p1=websGetVar(wp, "mytext", "");
+            printf("mysummary1=%s\n",p1);
+            int size=strlen(p1);
+            mycontent=walloc(size);
+            decodeURIComponent(mycontent,size,p1);
+            printf("mysummary2=%s\n",mycontent);
+            substr_UTF8(mycontent,SUMMARY_MAX*FONT_size,mysummary,sizeof(mysummary));
+        }
         printf("mysummary=%s\n",mysummary);
 
         if(scaselessmatch(mytitle,"comment")){
@@ -1708,8 +1905,19 @@ void ExeUploadTexts(Webs *wp)
     websWriteHeaders(wp, -1, 0);
     websWriteHeader(wp, "Content-Type", "text/html");
     websWriteEndHeaders(wp);
-    websWrite(wp, "{\"mytitle\":\"%s\",\"mytext\":\"%s\"}",mytitle,mysummary);
+    {
+        int sizeTitle=strlen(mytitle)*3+1;
+        char *pTitle=walloc(sizeTitle);
+        int sizeSummary=strlen(mysummary)*3+1;
+        char *pSummary=walloc(sizeSummary);
+        encodeURIComponent(pTitle,sizeTitle,mytitle);
+        encodeURIComponent(pSummary,sizeSummary,mysummary);
+        websWrite(wp, "{\"mytitle\":\"%s\",\"mytext\":\"%s\"}",pTitle,pSummary);
+        wfree(pTitle);
+        wfree(pSummary);
+    }
     websDone(wp);
+    wfree(mycontent);
 }
 
 void ExeDeletePage(Webs *wp)
@@ -1979,9 +2187,15 @@ void ExeGetComment(Webs *wp)
         websWrite(wp,"%s",sOutputFirst);
         for(i=1;;i++)
         {
+            char *p=chAllResult[i*ncolumn+5];
+            int size=strlen(p)*3+1;
+            char *mytext=walloc(size);
+            encodeURIComponent(mytext,size,p);
+            
             printf( "Comment[%s][%s][%s][%s]\n",chAllResult[i*ncolumn],chAllResult[i*ncolumn+1],chAllResult[i*ncolumn+3],chAllResult[i*ncolumn+5]);
             //sqlGetTable("tTxt", sqlGetText(currentpage),"author",sAuth,sizeof(sAuth));
-            websWrite(wp,sOutput,chAllResult[i*ncolumn],chAllResult[i*ncolumn+1],chAllResult[i*ncolumn+3],chAllResult[i*ncolumn+5]);
+            websWrite(wp,sOutput,chAllResult[i*ncolumn],chAllResult[i*ncolumn+1],chAllResult[i*ncolumn+3],mytext);
+            wfree(mytext);
             if((i==nrow)||(i==5)) break;
             websWrite(wp,"%s",sOutputMiddle);
         }
@@ -2048,8 +2262,10 @@ void ExeGetList(Webs *wp)
     char sTime[20]="";
     char sAuth[20]="";
     char sPic[20]="";
-    char sTitle[TITLE_MAX]="";
-    char sSummary[SUMMARY_MAX]="";
+    char tempTitle[TITLE_MAX];
+    char tempSummary[SUMMARY_MAX];
+    char sTitle[TITLE_MAX*3+1]="";
+    char sSummary[SUMMARY_MAX*3+1]="";
     char sMode[20]="";
     char sMode2[20]="";
     
@@ -2091,11 +2307,17 @@ void ExeGetList(Webs *wp)
                 sqlGetTable("tLst", lst,"pic_ft1",sMode,sizeof(sMode));
                 sqlGetTable("tLst", lst,"pic_ft2",sMode2,sizeof(sMode2));
                 sqlGetTable("tPic", pic,"author",sAuth,sizeof(sAuth));
-                sqlGetTable("tTxt", txt,"txt_title",sTitle,sizeof(sTitle));
-                sqlGetTable("tTxt", txt,"txt_summary",sSummary,sizeof(sSummary));
+                sqlGetTable("tTxt", txt,"txt_title",tempTitle,sizeof(tempTitle));
+                sqlGetTable("tTxt", txt,"txt_summary",tempSummary,sizeof(tempSummary));
                 snprintf(sPage,sizeof(sPage),"%04d",lst);
                 snprintf(sPic,sizeof(sPic),"%04d",pic);
-                //printf( "Index2[%s][%s][%s][%s][%s][%s][%s]\n",sPage,sTime,sPic,sAuth,sTitle,sSummary,sMode);
+                //printf( "Index2[%s][%s][%s][%s][%s][%s][%s]\n",sPage,sTime,sPic,sAuth,tempTitle,tempSummary,sMode);
+                encodeURIComponent(sTitle,(TITLE_MAX*3+1),tempTitle);
+                encodeURIComponent(sSummary,(SUMMARY_MAX*3+1),tempSummary);
+                //printf("sTitle=%s\n",sTitle);
+                //printf("tempTitle=%s\n",tempTitle);
+                //printf("sSummary=%s\n",sSummary);
+                //printf("tempSummary=%s\n",tempSummary);
                 websWrite(wp,sOutput,sPage,sTime,sPic,sAuth,sTitle,sSummary,sMode);
                 websWrite(wp,"%s",sOutputMiddle);
             }
@@ -2103,8 +2325,14 @@ void ExeGetList(Webs *wp)
             for(i=1;;i++)
             {
                 sqlGetTable("tPic", _atoi(chAllResult[i*ncolumn+2]),"author",sAuth,sizeof(sAuth));
-                sqlGetTable("tTxt", _atoi(chAllResult[i*ncolumn+3]),"txt_title",sTitle,sizeof(sTitle));
-                sqlGetTable("tTxt", _atoi(chAllResult[i*ncolumn+3]),"txt_summary",sSummary,sizeof(sSummary));
+                sqlGetTable("tTxt", _atoi(chAllResult[i*ncolumn+3]),"txt_title",tempTitle,sizeof(tempTitle));
+                sqlGetTable("tTxt", _atoi(chAllResult[i*ncolumn+3]),"txt_summary",tempSummary,sizeof(tempSummary));
+                encodeURIComponent(sTitle,(TITLE_MAX*3+1),tempTitle);
+                encodeURIComponent(sSummary,(SUMMARY_MAX*3+1),tempSummary);
+                //printf("sTitle=%s\n",sTitle);
+                //printf("tempTitle=%s\n",tempTitle);
+                //printf("sSummary=%s\n",sSummary);
+                //printf("tempSummary=%s\n",tempSummary);
                 if(smatch(chAllResult[i*ncolumn+7],"html"))
                 {
                     snprintf(sMode,sizeof(sMode),"%s",chAllResult[i*ncolumn+7]);
@@ -2115,7 +2343,7 @@ void ExeGetList(Webs *wp)
                 }
                 snprintf(sPic,sizeof(sPic),"%04d",_atoi(chAllResult[i*ncolumn+2]));
                 snprintf(sPage,sizeof(sPage),"%04d",_atoi(chAllResult[i*ncolumn]));
-                //printf( "Index1[%s][%s][%s][%s][%s][%s][%s]\n",chAllResult[i*ncolumn],chAllResult[i*ncolumn+1],sPic,sAuth,sTitle,sSummary,chAllResult[i*ncolumn+7]);
+                //printf( "Index1[%s][%s][%s][%s][%s][%s][%s]\n",chAllResult[i*ncolumn],chAllResult[i*ncolumn+1],sPic,sAuth,tempTitle,tempSummary,chAllResult[i*ncolumn+7]);
                 websWrite(wp,sOutput,sPage,chAllResult[i*ncolumn+1],sPic,sAuth,sTitle,sSummary,sMode);
                 if((i==nrow)||(i==10)) break;
                 websWrite(wp,"%s",sOutputMiddle);
@@ -2142,8 +2370,14 @@ void ExeGetList(Webs *wp)
             sqlGetTable("tLst", lst,"pic_ft1",sMode,sizeof(sMode));
             sqlGetTable("tLst", lst,"pic_ft2",sMode2,sizeof(sMode2));
             sqlGetTable("tPic", pic,"author",sAuth,sizeof(sAuth));
-            sqlGetTable("tTxt", txt,"txt_title",sTitle,sizeof(sTitle));
-            sqlGetTable("tTxt", txt,"txt_summary",sSummary,sizeof(sSummary));
+            sqlGetTable("tTxt", txt,"txt_title",tempTitle,sizeof(tempTitle));
+            sqlGetTable("tTxt", txt,"txt_summary",tempSummary,sizeof(tempSummary));
+            encodeURIComponent(sTitle,(TITLE_MAX*3+1),tempTitle);
+            encodeURIComponent(sSummary,(SUMMARY_MAX*3+1),tempSummary);
+            //printf("sTitle=%s\n",sTitle);
+            //printf("tempTitle=%s\n",tempTitle);
+            //printf("sSummary=%s\n",sSummary);
+            //printf("tempSummary=%s\n",tempSummary);
             if(smatch(sMode2,"html"))
             {
                 snprintf(sMode,sizeof(sMode),"%s",sMode2);
@@ -2152,7 +2386,7 @@ void ExeGetList(Webs *wp)
             //printf("sMode: %s\n", sMode);
             snprintf(sPage,sizeof(sPage),"%04d",lst);
             snprintf(sPic,sizeof(sPic),"%04d",pic);
-            //printf( "Index2[%s][%s][%s][%s][%s][%s][%s]\n",sPage,sTime,sPic,sAuth,sTitle,sSummary,sMode);
+            //printf( "Index2[%s][%s][%s][%s][%s][%s][%s]\n",sPage,sTime,sPic,sAuth,tempTitle,tempSummary,sMode);
             websWrite(wp,sOutput,sPage,sTime,sPic,sAuth,sTitle,sSummary,sMode);
             if(i==10) break;
             websWrite(wp,"%s",sOutputMiddle);
