@@ -116,6 +116,7 @@ static WebsMime websMimeList[] = {
     { "application/x-troff-ms", ".ms" },
     { "application/x-ustar", ".ustar" },
     { "application/x-wais-source", ".src" },
+	{ "application/x-mpegurl", ".m3u8" },
     { "application/zip", ".zip" },
     { "audio/basic", ".au snd" },
     { "audio/x-aiff", ".aif" },
@@ -151,6 +152,7 @@ static WebsMime websMimeList[] = {
     { "video/mp4", ".mp4" },
     { "video/x-msvideo", ".avi" },
     { "video/x-sgi-movie", ".movie" },
+	{ "video/mp2t", ".ts" },
     { NULL, NULL},
 };
 
@@ -1908,6 +1910,7 @@ PUBLIC void websWriteHeaders(Webs *wp, ssize length, char *location)
             websWriteHeader(wp, "Location", "%s", location);
         } else if ((key = hashLookup(websMime, wp->ext)) != 0) {
             websWriteHeader(wp, "Content-Type", "%s", key->content.value.string);
+			printf("Content-Type:%s\n",key->content.value.string);
         }
         if (wp->responseCookie) {
             websWriteHeader(wp, "Set-Cookie", "%s", wp->responseCookie);
