@@ -202,7 +202,6 @@ Offset websSeekFile(int fd, Offset offset, int origin)
 #endif
 }
 
-
 PUBLIC ssize websWriteFile(int fd, char *buf, ssize size)
 {
 #if ME_ROM
