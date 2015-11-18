@@ -1824,8 +1824,8 @@ if (scaselessmatch(wp->method, "POST")) {
               sqlite3_free(pErrMsg);
           }
         }
+        wfree(mycontent);
     }
-   wfree(mycontent);
    websWrite(wp, "{\"status\":\"ok\",\"ErrorCode\":\"1\"}");
     websDone(wp);
 }
